@@ -125,3 +125,82 @@ void liberarSistema(SistemaTaller &s, Taller infoTaller) {
     delete[] s.orden;
 
 }
+
+//SISTEMA DE VEHICULOS 
+Vehiculo* agregarVehiculo(SistemaTaller* s, Vehiculo datos);
+Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
+Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
+Vehiculo** buscarVehiculosPorPropietario(SistemaTaller* s, const char* subcadena, int* cantidad);
+Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
+
+bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos);
+bool eliminarVehiculo(SistemaTaller* s, int id);
+
+
+void menuRegistrarVehiculo(SistemaTaller* s);
+void menuBuscarVehiculo(SistemaTaller* s);
+void menuActualizarVehiculo(SistemaTaller* s);
+void menuEliminarVehiculo(SistemaTaller* s);
+void menuListarVehiculos(SistemaTaller* s);
+void mostrarVehiculo(Vehiculo* vehiculo);
+void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
+
+// SISTEMA DE MECANICOS 
+Mecanico* agregarMecanico(SistemaTaller* s, Mecanico datos);
+Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
+Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
+Mecanico* listarMecanico(SistemaTaller* s, int* cantidad);
+
+int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico);
+
+void menuRegistrarMecanico(SistemaTaller* s);
+void menuBuscarMecanico(SistemaTaller* s);
+void menuListarMecanico(SistemaTaller* s);
+void mostrarMecanico(SistemaTaller* s);
+void mostrarListaMecanico(SistemaTaller* s);
+
+//SISTEMA DE REPUESTOS
+Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos);
+Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
+Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
+Repuesto* bucarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
+Repuesto* listarRepuesto(SistemaTaller* s, int* cantidad);
+
+bool menuRegistrarEntradaMercancia(SistemaTaller* s, int idRepuesto, int CantidadAdicional);
+bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio);
+bool eliminarRepuesto(SistemaTaller* s, int id);
+
+void menuRegistrarRepuesto(SistemaTaller* s);
+void menuBuscarRepuesto(SistemaTaller* s);
+void menuEntradaMercancia(SistemaTaller* s);
+void menuCambiarPrecio(SistemaTaller* s);
+void menuEliminarRepuesto(SistemaTaller* s);
+void menuListarRepuestos(SistemaTaller* s);
+void mostrarRepuesto(Repuesto* repuesto);
+void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
+
+//SISTEMA DE ORDEN DE SERVICIO
+OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, const char* descripcionFalla, int KilometrajeIngreso, const char* fechaActual);
+
+bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int cantidad);
+bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto);
+bool cerrarOrden(SistemaTaller* s, int idOrden, float manoObra, const char* fechaActual);
+bool anularOrden(SistemaTaller* s, int idOrden);
+
+float calcularTotalOrden(OrdenServicio* Orden);
+
+OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
+
+OrdenServicio** listaOrdenesPorEstado(SistemaTaller* s, const char* estado, int* cantidad);
+OrdenServicio** listaOrdenesPorVehiculo(SistemaTaller* s, int* vehiculo, int* cantidad);
+OrdenServicio** listaTodasLasOrdenes(SistemaTaller* s, int* cantidad);
+
+void menuAbrirOrden(SistemaTaller* s);
+void menuAgregarRepuestoAOrden(SistemaTaller* s);
+void menuQuitarRepuestoDeOrden(SistemaTaller* s);
+void menuCerrarOrden(SistemaTaller* s);
+void menuAnularOrden(SistemaTaller* s);
+void menuVerDetalleOrden(SistemaTaller* s);
+void menuListarOrdenes(SistemaTaller* s);
+void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
+void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
