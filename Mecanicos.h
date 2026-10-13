@@ -9,7 +9,7 @@ Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
 Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
 Mecanico* listarMecanico(SistemaTaller* s, int* cantidad);
 
-int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecancio);
+int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico);
 
 void menuRegistrarMecanico(SistemaTaller* s);
 void menuBuscarMecanico(SistemaTaller* s);
