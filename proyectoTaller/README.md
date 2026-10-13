@@ -1,30 +1,13 @@
-# PROGRAMACION-2-URU-RODRIGUEZ
-Repositorio creado para reesguardo de informacion de PROGRAMACION 2 de la URU Trimestre IV
+Proyecto 1: Sistema general de taller mecanico 
 
-Alumno: Lucas Andres Rodriguez Machado
+Laboratorio de Programacion II
 
-Carrera: Ingenieria de Computacion
+Seccion "A"
 
-En este repositorio, se inlcuiran todos los proyectos y codigos relacionados con la materia,
-se iran documentando los avances, progresos y entregas de cada uno de estos mismos durante el trimestre.
-<<<<<<< HEAD
-=======
+Integrantes:
+- Lucas Rodriguez 
+- Isidro Marmol 
 
->>>>>>> 2b895ea1966132dd2877f317212f55d7e0e3ef72
-Clases vistas:
-1. Punteros
-2. Operadores con punteros 
-3. Pasos por referencia 
-4. Memoria Dinamica 
+Descripcion general del programa:
+"El programa en cuestion tiene el objetivo de servir como administrador de un taller donde se puedan gestionar distintos tipos de vehiculos, repuestos, ordenes de servicio y mecanicos en cuestion. Todo a partir del uso de los elementos vistos hasta el momento como punteros, memoria dinamica, estructuras generales en el lenguaje de C++ y la compilacion a partir de GitBash; aprovechando tambien la separacion entre las capas tanto de la logica y la presentacion".
 
-Poyectos a realizar:
-<<<<<<< HEAD
-PROYECTO 1: Taller mecanico (Colaboracion con Isidro Marmol)
-=======
-
-PROYECTO Fase 1: Taller mecanico (Colaboracion con Isidro Marmol)
->>>>>>> 2b895ea1966132dd2877f317212f55d7e0e3ef72
-
-Ejercicios realizados por cuenta propia:
-- Hacks en GITbash
-- Desarrollo de Ejercicios integradores.
