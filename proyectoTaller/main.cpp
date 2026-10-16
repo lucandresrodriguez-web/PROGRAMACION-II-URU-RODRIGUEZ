@@ -1,5 +1,9 @@
 #include <iostream>
 #include <cstring>
+#include <iomanip>
+#include <cstdlib>
+#include <cct
+
 
 using namespace std;
 
