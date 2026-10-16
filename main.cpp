@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <cct
 
-
 using namespace std;
 
 //ESTRUCTURAS DE DATOS
