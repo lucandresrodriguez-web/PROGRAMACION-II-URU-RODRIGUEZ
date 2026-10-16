@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # PROGRAMACION-2-URU-RODRIGUEZ
 Repositorio creado para reesguardo de informacion de PROGRAMACION 2 de la URU Trimestre IV
 
