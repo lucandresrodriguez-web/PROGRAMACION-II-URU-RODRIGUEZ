@@ -20,3 +20,4 @@ PROYECTO 1: Taller mecanico (Colaboracion con Isidro Marmol)
 Ejercicios realizados por cuenta propia:
 - Hacks en GITbash
 - Desarrollo de Ejercicios integradores.
+- Programa de Pokedex en C++
