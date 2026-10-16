@@ -2,7 +2,8 @@
 #include <cstring>
 #include <iomanip>
 #include <cstdlib>
-#include <cct
+#include <cstdio>
+#include <limits>
 
 using namespace std;
 
