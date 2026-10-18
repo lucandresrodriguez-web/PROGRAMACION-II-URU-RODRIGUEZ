@@ -90,9 +90,6 @@ struct SistemaTaller {
 };
 
 //SISTEMA GENERAL 
-void inicializarSistema(SistemaTaller &s, Taller infoTaller);
-void liberarSistema(SistemaTaller &s);
-
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
 
     s.tallerInfo = infoTaller;
@@ -131,44 +128,461 @@ void liberarSistema(SistemaTaller &s, Taller infoTaller) {
 }
 
 //SISTEMA DE VEHICULOS 
-Vehiculo* agregarVehiculo(SistemaTaller* s, Vehiculo datos);
-Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
-Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
-Vehiculo** buscarVehiculosPorPropietario(SistemaTaller* s, const char* subcadena, int* cantidad);
-Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
+void redimensionarVehiculos(SistemaTaller* s) {
+    s->capacidadVehiculos *= 2; 
+    Vehiculo* nuevosVehiculos = new Vehiculo[s->capacidadVehiculos];
 
-bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos);
-bool eliminarVehiculo(SistemaTaller* s, int id);
+    for (int i = 0; i < s->numVehiculos; i++) {
+        nuevosVehiculos[i] = s->vehiculos[i];
+    }
 
+    delete[] s->vehiculos;
+    s->vehiculos = nuevosVehiculos;
+}
 
-void menuRegistrarVehiculo(SistemaTaller* s);
-void menuBuscarVehiculo(SistemaTaller* s);
-void menuActualizarVehiculo(SistemaTaller* s);
-void menuEliminarVehiculo(SistemaTaller* s);
-void menuListarVehiculos(SistemaTaller* s);
-void mostrarVehiculo(Vehiculo* vehiculo);
-void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
+Vehiculo* agregarVehiculo(SistemaTaller* s, Vehiculo datos) {
+    if (s->numVehiculos >= s->capacidadVehiculos) {
+        redimensionarVehiculos(s);
+    }
+
+    datos.id = s->siguienteIdVehiculos++;
+    s->vehiculos[s->numVehiculos] = datos;
+    s->numVehiculos++;
+
+    return &(s->vehiculos[s->numVehiculos - 1]);
+}
+
+Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id) {
+    for (int i = 0; i < s->numVehiculos; i++) {
+        if (s->vehiculo[i].id == id) {
+            return &(s->vehiculos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa){
+    for (int i = 0; i < s->numVehiculos; i++) {
+        if (strcmp(s->vehiculos[i],placa, placa) == 0) {
+            return &(s->vehiculos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Vehiculo** buscarVehiculosPorPropietario(SistemaTaller* s, const char* subcadena, int* cantidad) {
+    int encontrados = 0;
+    for (int i = 0; i < s->numVehiculos; i++) {
+        if (strstr(s->vehiculos[i].nombrePropietario, subcadena) != nullptr) {
+            encontrados++;
+        }
+    }
+    *cantidad = encontrados;
+    if (encontrados == 0) return nullptr;
+
+    Vehiculo** lista = new Vehiculo*[encontrados];
+    int j = 0;
+    for (int i = 0; i < s->numVehiculos; i++) {
+        if (strstr(s->vehiculos[i].nombrePropietario, subcadena) != nullptr) {
+            lista[j++] = &(s->vehiculos[i]);
+        }
+    }
+    return lista;
+}
+
+Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad) {
+    *cantidad = s->numVehiculos;
+    if (s->numVehiculos == 0) return nullptr;
+
+    Vehiculo** lista = new Vehiculo*[s->numVehiculos];
+    for (int i = 0; i < s->nuevosVehiculos; i++) {
+        lista[i] = &(s->vehiculos[i]);
+    }
+    return lista;
+}
+
+bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos) {
+    Vehiculo* v = buscarVehiculoPorID(s, id);
+    if (v == nullptr) return false;
+
+    strcpy(v->placa, datos.placa);
+    strcpy(v->marca, datos.marca);
+    strcpy(v->modelo, datos.modelo);
+    v->anio = datos.anio;
+    v->kilometraje = datos.kilometraje;
+    strcpy(v->nombrePropietario, datos.nombrePropietario);
+    strcpy(v->cedulaPropietario, datos.cedulaPropietario);
+    strcpy(v->telefonoPropietario, datos.telefonoPropietario);
+    return true;
+}
+
+bool eliminarVehiculo(SistemaTaller* s, int id) {
+    int pos = -1;
+    for (int i = 0; i < s->numVehiculos; i++) {
+        if (s->vehiculos[i].id == id) {
+            pos = i;
+            break;
+        }
+    }
+
+    if (pos == -1) return false;
+
+    for (int i = pos; i < s->numVehiculos - 1; i++) {
+        s->vehiculos[i] = s->vehiculos[i + 1];
+    }
+    
+    s->numVehiculos--;
+    return true;
+}
+
+void menuRegistrarVehiculo(SistemaTaller* s) {
+    if (vehiculo == nullptr) {
+        cout << "[!] Vehiculo no encontrado." << endl;
+        return;
+    }
+    cout << "----------------------------------------" << endl;
+    cout << " ID: " << vehiculo->id << endl;
+    cout << " Placa: " << vehiculo->placa << endl;
+    cout << " Marca y Modelo: " << vehiculo->marca << " " << vehiculo->modelo << " (" << vehiculo->anio << ")" << endl;
+    cout << " Kilometraje: " << vehiculo->kilometraje << " km" << endl;
+    cout << " Propietario: " << vehiculo->nombrePropietario << " (CI: " << vehiculo->cedulaPropietario << ")" << endl;
+    cout << " Telefono: " << vehiculo->telefonoPropietario << endl;
+    cout << " Fecha Registro: " << vehiculo->fechaRegistro << endl;
+    cout << "----------------------------------------" << endl;
+}
+
+void menuBuscarVehiculo(SistemaTaller* s) {
+    if (vehiculos == nullptr || cantidad == 0) {
+        cout << "\n[!] No hay vehiculos registrados para mostrar." << endl;
+        return;
+    }
+    cout << "\n=== LISTA DE VEHICULOS (" << cantidad << ") ===" << endl;
+    for (int i = 0; i < cantidad; i++) {
+        mostrarVehiculo(vehiculos[i]);
+    }
+}
+
+void menuActualizarVehiculo(SistemaTaller* s) {
+    Vehiculo nuevoV;
+    cout << "\n--- REGISTRAR NUEVO VEHICULO ---" << endl;
+    cout << "Placa: ";
+    cin >> nuevoV.placa;
+    cout << "Marca: ";
+    cin >> nuevoV.marca;
+    cout << "Modelo: ";
+    cin >> nuevoV.modelo;
+    cout << "Anio: ";
+    cin >> nuevoV.anio;
+    cout << "Kilometraje: ";
+    cin >> nuevoV.kilometraje;
+    cout << "Nombre del Propietario: ";
+    cin.ignore();
+    cin.getline(nuevoV.nombrePropietario, 100);
+    cout << "Cedula del Propietario: ";
+    cin >> nuevoV.cedulaPropietario;
+    cout << "Telefono del Propietario: ";
+    cin >> nuevoV.telefonoPropietario;
+    cout << "Fecha de Registro (DD/MM/AAAA): ";
+    cin >> nuevoV.fechaRegistro;
+
+    agregarVehiculo(s, nuevoV);
+    cout << "\n[OK] Vehiculo registrado exitosamente con ID asignado." << endl;
+}
+
+void menuEliminarVehiculo(SistemaTaller* s) {
+    int opc;
+    cout << "\n--- BUSCAR VEHICULO ---" << endl;
+    cout << "1. Buscar por ID" << endl;
+    cout << "2. Buscar por Placa" << endl;
+    cout << "3. Buscar por Propietario (parcial)" << endl;
+    cout << "Seleccione una opcion: ";
+    cin >> opc;
+
+    if (opc == 1) {
+        int id;
+        cout << "Ingrese ID del vehiculo: ";
+        cin >> id;
+        Vehiculo* v = buscarVehiculoPorID(s, id);
+        mostrarVehiculo(v);
+    } else if (opc == 2) {
+        char placa[10];
+        cout << "Ingrese Placa: ";
+        cin >> placa;
+        Vehiculo* v = buscarVehiculoPorPlaca(s, placa);
+        mostrarVehiculo(v);
+    } else if (opc == 3) {
+        char sub[100];
+        cout << "Ingrese nombre o parte del propietario: ";
+        cin.ignore();
+        cin.getline(sub, 100);
+        int cant = 0;
+        Vehiculo** lista = buscarVehiculosPorPropietario(s, sub, &cant);
+        mostrarListaVehiculos(lista, cant);
+        delete[] lista;
+    } else {
+        cout << "[!] Opcion invalida." << endl;
+    }
+}
+
+void menuListarVehiculos(SistemaTaller* s) {
+    int id;
+    cout << "\n--- ACTUALIZAR VEHICULO ---" << endl;
+    cout << "Ingrese el ID del vehiculo a actualizar: ";
+    cin >> id;
+
+    Vehiculo* vExistente = buscarVehiculoPorID(s, id);
+    if (vExistente == nullptr) {
+        cout << "[!] No se encontro un vehiculo con el ID " << id << endl;
+        return;
+    }
+
+    Vehiculo datosNuevos;
+    cout << "Nueva Placa: ";
+    cin >> datosNuevos.placa;
+    cout << "Nueva Marca: ";
+    cin >> datosNuevos.marca;
+    cout << "Nuevo Modelo: ";
+    cin >> datosNuevos.modelo;
+    cout << "Nuevo Anio: ";
+    cin >> datosNuevos.anio;
+    cout << "Nuevo Kilometraje: ";
+    cin >> datosNuevos.kilometraje;
+    cout << "Nuevo Propietario: ";
+    cin.ignore();
+    cin.getline(datosNuevos.nombrePropietario, 100);
+    cout << "Nueva Cedula Propietario: ";
+    cin >> datosNuevos.cedulaPropietario;
+    cout << "Nuevo Telefono Propietario: ";
+    cin >> datosNuevos.telefonoPropietario;
+
+    if (actualizarVehiculo(s, id, datosNuevos)) {
+        cout << "[OK] Vehiculo actualizado exitosamente." << endl;
+    } else {
+        cout << "[!] Error al actualizar." << endl;
+    }
+}
+
+void mostrarVehiculo(Vehiculo* vehiculo) {
+    int id;
+    cout << "\n--- ELIMINAR VEHICULO ---" << endl;
+    cout << "Ingrese el ID del vehiculo a eliminar: ";
+    cin >> id;
+
+    if (eliminarVehiculo(s, id)) {
+        cout << "[OK] Vehiculo eliminado exitosamente." << endl;
+    } else {
+        cout << "[!] No se encontro el vehiculo con ese ID." << endl;
+    }
+}
+
+void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad) {
+    int cantidad = 0;
+    Vehiculo** lista = listarVehiculos(s, &cantidad);
+    mostrarListaVehiculos(lista, cantidad);
+    delete[] lista;
+}
 
 // SISTEMA DE MECANICOS 
-Mecanico* agregarMecanico(SistemaTaller* s, Mecanico datos);
-Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
-Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
-Mecanico* listarMecanico(SistemaTaller* s, int* cantidad);
+void redimensionarMecanicos(SistemaTaller* s) {
+    s->capacidadMecanicos *= 2; 
+    Mecanico* nuevosMecanicos = new Mecanicos[s->capacidadMecanicos];
 
-int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico);
+    for (int i = 0; i < s->numMecanicos; i++) {
+        nuevosMecanicos[i] = s->mecanicos[i];
+    }
 
-void menuRegistrarMecanico(SistemaTaller* s);
-void menuBuscarMecanico(SistemaTaller* s);
-void menuListarMecanico(SistemaTaller* s);
-void mostrarMecanico(SistemaTaller* s);
-void mostrarListaMecanico(SistemaTaller* s);
+    delete[] s->mecanicos;
+    s->mecanicos = nuevosMecanicos;
+}
+
+Mecanico* agregarMecanico(SistemaTaller* s, Mecanico datos) {
+    if (s->numMecanicos >= s->capacidadMecanicos) {
+        redimensionarMecanicos(s);
+    }
+
+    datos.id = s->siguienteIdMecanicos++;
+    s->mecanicos[s->numMecanicos] = datos;
+    s->numMecanicos++;
+
+    return &(s->mecanicos[s->numMecanicos - 1]);
+}
+
+Mecanico* buscarMecanicoporID(SistemaTaller* s, int id) {
+    for (int i = 0; i < s->numMecanicos; i++) {
+        if (s->mecanicos[i].id == id) {
+            return &(s->mecanicos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula) {
+    for (int i = 0; i < ->numMecanicos; i++) {
+        if (strcmp(s->mecanicos[i].cedula, cedula) == 0) {
+            return &(s->mecanicos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Mecanico* listarMecanico(SistemaTaller* s, int* cantidad) {
+    *cantidad = s->numMecanicos;
+    if (s->numMecanicos == 0) return nullptr;
+    return s->mecanicos;
+}
+
+int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico) {
+    int cont = 0;
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (s->ordenes[i].idMecanico == idMecanico) {
+            if (strcmp(s->ordenes[i].estado, "Abierta") == 0 || strcmp(s->ordenes[i].estado, "ABIERTA") == 0) {
+                cont++;
+            }
+        }
+    }
+    return cont;
+}
+
+void menuRegistrarMecanico(SistemaTaller* s) {
+    Mecanico nuevoM;
+    cout << "\n--- REGISTRAR NUEVO MECANICO ---" << endl;
+    cout << "Nombre completo: ";
+    cin.ignore();
+    cin.getline(nuevoM.nombre, 100);
+    cout << "Cedula: ";
+    cin.nuevoM.cedula;
+    cout << "Especialidad: ";
+    cin >> nuevoM.especialidad;
+    cout << "Fecha de Ingreso (DD/MM/AAAA): ";
+    cin >> nuevoM.fechaIngreso;
+
+    agregarMecanico(s, nuevoM);
+    cout << "\n[OK] Mecanico registrado exitosamente." << endl;
+}
+
+void menuBuscarMecanico(SistemaTaller* s) {
+    int opc;
+    cout << "\n--- BUSCAR MECANICO ---" << endl;
+    cout << "1. Buscar por ID" << endl;
+    cout << "2. Buscar por cedula" << endl;
+    cout << "Seleccione una opcion: ";
+    cin >> opc;
+
+    if (opc == 1) {
+        int id;
+        cout << "Ingrese ID del mecancio: ";
+        cin >> id;
+        Mecanico* m = buscarMecanicoporID(s, id);
+        mostrarMecanicoUnico(m);
+    } else if (opc == 2) {
+        char ced[20];
+        cout << "Ingrese Cedula: ";
+        cin >> ced;
+        Mecanico* m = buscarMecanicoporCedula(s, ced);
+        mostrarMecanicoUnico(m);
+    } else {
+        cout << "[!] Opcion Invalida." << endl;
+    }
+}
+
+void menuListarMecanico(SistemaTaller* s) {
+    mostrarListaMecanico(s);
+}
+
+void mostrarMecanicoUnico(Mecancio *m) {
+    if (m == nullptr) {
+        cout << "[!] Mecanico no encontrado." << endl;
+        return;
+    }
+    cout << "-------------------------------------------" << endl;
+    cout << "ID: " << m->id << endl;
+    cout << "Nombre: " << m->nombre << endl;
+    cout << "Cedula: " << m->cedula << endl;
+    cout << "Especialidad: " << m->especialidad << endl;
+    cout << "Fecha Ingreso: " << m->fechaIngreso << endl;
+    cout << "-------------------------------------------" << endl;
+}
+
+void mostrarMecanico(SistemaTaller* s) {
+    int id;
+    cout << "Ingrese el ID del mecanico a mostrar: ";
+    cin >> id;
+    Mecancio* m = buscarMecanicoporID(s, id);
+    mostrarMecanicoUnico(m);
+}
+
+void mostrarListaMecanico(SistemaTaller* s) {
+    int cantidad = 0;
+    Mecancio* lista = listarMecanico(s, &cantidad);
+
+    if (lista == nullptr || cantidad == 0) {
+        cout << "\n[!] No hay mecanicos registrados para mostrar." << endl;
+        return;
+    }
+
+    cout << "\n=== LISTA DE MECANCIOS (" << cantidad << ") ===" << endl;
+    for (int i = 0; i < cantidad; i++) {
+        mostrarMecanicoUnico(&lista[i]);
+    }
+}
 
 //SISTEMA DE REPUESTOS
-Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos);
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
-Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
-Repuesto* bucarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
-Repuesto* listarRepuesto(SistemaTaller* s, int* cantidad);
+void redimensionarRepuestos(SistemaTaller* s) {
+    s->capacidadRepuestos *= 2;
+    Repuesto* nuevosRepuestos = new Repuesto[s->capacidadRepuestos];
+
+    for (int i = 0; i < s->numRepuestos; i++) {
+        nuevosRepuestos[i] = s->repuestos[i];
+    }
+
+    delete[] s->repuestos;
+    s->repuestos = nuevosRepuestos;
+}
+
+Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos) {
+    if (s->numRepuestos >= s->capacidadRepuestos) {
+        redimensionarRepuestos(s);
+    }
+
+    datos.id = s->siguienteIdRepuestos++;
+    s->repuestos[s->numRepuestos] = datos;
+    s->numRepuestos++;
+
+    return &(s->repuestos[s->numRepuestos - 1]);
+}
+
+Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id); {
+    for (int i = 0; i < s->numRepuestos; i++) {
+        if (s->repuestos[i].id == id) {
+            return &(s->repuestos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo) {
+    for (int i = 0; i < s->numRepuestos; i++) {
+        if (strcmp(s->repuestos[i].codigo, codigo) == 0) {
+            return &(s->repuestos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Repuesto* bucarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena) {
+    for (int i = 0; i < s->numRepuestos; i++) {
+        if (strstr(s->repuestos[i].nombre, subcadena) != nullptr) {
+            return &(s->repuestos[i]);
+        }
+    }
+    return nullptr;
+}
+
+Repuesto* listarRepuesto(SistemaTaller* s, int* cantidad) {
+     *cantidad = s->numRepuestos;
+    if (s->numRepuestos == 0) return nullptr;
+    return s->repuestos;
+}
 
 bool menuRegistrarEntradaMercancia(SistemaTaller* s, int idRepuesto, int CantidadAdicional);
 bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio);
