@@ -500,7 +500,7 @@ void mostrarMecanicoUnico(Mecancio *m) {
     cout << "Cedula: " << m->cedula << endl;
     cout << "Especialidad: " << m->especialidad << endl;
     cout << "Fecha Ingreso: " << m->fechaIngreso << endl;
-    cout << "-------------------------------------------" << endl;
+    cout << "--------------------------------------------" << endl;
 }
 
 void mostrarMecanico(SistemaTaller* s) {
@@ -584,18 +584,176 @@ Repuesto* listarRepuesto(SistemaTaller* s, int* cantidad) {
     return s->repuestos;
 }
 
-bool menuRegistrarEntradaMercancia(SistemaTaller* s, int idRepuesto, int CantidadAdicional);
-bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio);
-bool eliminarRepuesto(SistemaTaller* s, int id);
+bool menuRegistrarEntradaMercancia(SistemaTaller* s, int idRepuesto, int CantidadAdicional) {
+    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
+    if (r == nullptr) return false;
+    r->stock += CantidadAdicional;
+    return true;
+}
 
-void menuRegistrarRepuesto(SistemaTaller* s);
-void menuBuscarRepuesto(SistemaTaller* s);
-void menuEntradaMercancia(SistemaTaller* s);
-void menuCambiarPrecio(SistemaTaller* s);
-void menuEliminarRepuesto(SistemaTaller* s);
-void menuListarRepuestos(SistemaTaller* s);
-void mostrarRepuesto(Repuesto* repuesto);
-void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
+bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio) {
+    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
+    if (r == nullptr) return false;
+    r->precio += nuevoPrecio;
+    return true;
+}
+
+bool eliminarRepuesto(SistemaTaller* s, int id) {
+    int pos = -1;
+    for (int i = 0; i < s->numRepuestos; i++) {
+        if (s->repuestos[i].id == id) {
+            pos = i;
+            break;
+        }
+    }
+
+    if (pos == -1) return false;
+
+    for (int i = pos; i < s->numRepuestos - 1; i++) {
+        s->repuestos[i] = s->repuestos[i + 1];
+    }
+    
+    s->numRepuestos--;
+    return true;
+}
+
+void menuRegistrarRepuesto(SistemaTaller* s) {
+    Repuesto nuevoR;
+    cout << "\n--- REGISTRAR NUEVO REPUESTO ---" << endl;
+    cout << "Codigo: ";
+    cin >> nuevoR.codigo;
+    cout << "Nombre: ";
+    cin.ignore();
+    cin.getline(nuevoR.nombre, 100);
+    cout << "Precio unitario: ";
+    cin >> nuevoR.precio;
+    cout << "Stock inicial: ";
+    cin >> nuevoR.stock;
+
+    agregarRepuesto(s, nuevoR);
+    cout << "\n[OK] Repuesto registrado exitosamente" << endl;
+}
+
+void menuBuscarRepuesto(SistemaTaller* s) {
+    int opc;
+    cout << "\n--- BUSCAR REPUESTO ---" << endl;
+    cout << "1. Buscar por ID" << endl;
+    cout << "2. Buscar por Codigo" << endl;
+    cout << "3. Buscar por Nombre (parcial)" << endl;
+    cout << "Seleccione una opcion: ";
+    cin >> opc;
+
+    if (opc == 1) {
+        int id;
+        cout << "Ingrese ID del repuesto: ";
+        cin >> id;
+        Repuesto* r = buscarRepuestoPorID(s, id);
+        mostrarRepuesto(r);
+    } else if (opc == 2) {
+        char codigo[20];
+        cout << "Ingrese Codigo: ";
+        cin >> codigo;
+        Repuesto* r = buscarRepuestoPorCodigo(s, codigo);
+        mostrarRepuesto(r);
+    } else if (opc == 3) {
+        char sub[100];
+        cout << "Ingrese el nombre o parte del mismo: ";
+        cin.ignore();
+        cin.getline(sub, 100);
+        Repuesto* r = buscarRepuestoPorNombreParcial(s, sub);
+        mostrarRepuesto(r);
+    } else {
+        cout << "[!] Opcion Invalida." << endl;
+    }
+}
+
+void menuEntradaMercancia(SistemaTaller* s) {
+    int id, cant;
+    cout << "\n--- REGISTRAR ENTRADA DE MERCANCIA ---" << endl;
+    cout << "Ingrese ID del repuesto: ";
+    cin >> id;
+    cout << "Ingrese la cantidad adicional a sumar al stock: ";
+    cin >> cant;
+
+    if (menuRegistrarEntradaMercancia(s, id, cant)) {
+        cout << "[OK] Entrada de mercancia registrada con exito." << endl;
+    } else {
+        cout << "[!] No se encontro el repuesto con ese ID." << endl;
+    }
+}
+
+void menuCambiarPrecio(SistemaTaller* s) {
+    int id;
+    float nuevoP;
+    cout << "\n--- CAMBIAR PRECIO DE REPUESTO ---" << endl;
+    cout << "Ingrese ID del repuesto: ";
+    cin >> id;
+    cout << "Ingrese el nuevo precio: ";
+    cin >> nuevoP;
+
+    if (cambiarPrecioRepuesto(s, id, nuevoP)) {
+        cout << "[OK] Precio actualizado con exito." << endl;
+    } else {
+        cout << "[!] No se encontro el repuesto con ese ID." << endl;
+    }
+}
+
+void menuEliminarRepuesto(SistemaTaller* s) {
+    int id;
+    cout << "\n--- ELIMINAR REPUESTO ---" << endl;
+    cout << "Ingrese el ID del repuesto a eliminar: ";
+    cin >> id;
+
+    if (eliminarRepuesto(s, id)) {
+        cout << "[OK] Repuesto eliminado exitosamente." << endl;
+    } else {
+        cout << "[!] No se encontro el repuesto con ese ID." << endl;
+    }
+}
+
+void menuListarRepuestos(SistemaTaller* s) {
+    int cantidad = 0;
+    Repuesto* listaSimple = listarRepuesto(s, &cantidad);
+    
+    if (listaSimple == nullptr || cantidad == 0) {
+        cout << "\n[!] No hay repuestos registrados para mostrar." << endl;
+        return;
+    }
+
+    Repuesto** listaDoble = new Repuesto*[cantidad];
+    for (int i = 0; i < cantidad; i++) {
+        listaDoble[i] = &listaSimple[i];
+    }
+
+    mostrarListaRepuestos(listaDoble, cantidad);
+    delete[] listaDoble;
+}
+
+void mostrarRepuesto(Repuesto* repuesto) {
+    if (m == nullptr) {
+        cout << "[!] Mecanico no encontrado." << endl;
+        return;
+    }
+    cout << "-------------------------------------------" << endl;
+    cout << "ID: " << m->id << endl;
+    cout << "Nombre: " << m->nombre << endl;
+    cout << "Codigo: " << m->cedula << endl;
+    cout << "Precio $: " << m->especialidad << endl;
+    cout << "Stock disponible: " << m->fechaIngreso << endl;
+    cout << "--------------------------------------------" << endl;
+}
+
+void mostrarListaRepuestos(Repuesto** repuestos, int cantidad) {
+    if (repuestos == nullptr || cantidad == 0) {
+        cout << "\n[!] No hay repuestos registrados para mostrar." << endl;
+        return;
+    }
+
+    cout << "\n=== LISTA DE REPUESTOS (" << cantidad << ") ===" << endl;
+    for (int i = 0; i < cantidad; i++) {
+        mostrarRepuesto(repuestos[i]);
+    }
+}
 
 //SISTEMA DE ORDEN DE SERVICIO
 OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, const char* descripcionFalla, int KilometrajeIngreso, const char* fechaActual);
