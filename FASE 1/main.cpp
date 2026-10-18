@@ -69,7 +69,7 @@ struct OrdenServicio {
     int kilometrajeIngreso;
     float manoObra;
 
-    DetalleOrden* detalles;
+    DetalleOrdenes* detalles;
     int           numDetalles;
     int           capacidadDetalles;
 };
@@ -86,7 +86,7 @@ struct SistemaTaller {
     int siguienteIdVehiculos;
     int siguienteIdMecanicos;
     int siguienteIdRepuestos;
-    int siguienteIdOrden;
+    int siguienteIdOrdenes;
 };
 
 //SISTEMA GENERAL 
@@ -97,35 +97,35 @@ void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
     s.capacidadVehiculos = 4;
     s.capacidadRepuestos = 4;
     s.capacidadMecanicos = 4;
-    s.capacidadOrden = 4;
+    s.capacidadOrdenes = 4;
 
     s.vehiculos = new Vehiculos[s.capacidadVehiculos];
     s.repuestos = new Repuestos[s.capacidadRepuestos];
     s.mecanicos = new Mecanicos[s.capacidadMecanicos];
-    s.orden = new OrdenServicio[s.capacidadOrden];
+    s.ordenes = new OrdenesServicio[s.capacidadOrdenes];
 
     s.numVehiculos = 0;
     s.numRepuestos = 0;
     s.numMecanicos = 0;
-    s.numOrden = 0;
+    s.numOrdenes = 0;
 
     s.siguienteIdMecanicos = 1;
-    s.siguienteIdOrden = 1;
+    s.siguienteIdOrdenes = 1;
     s.siguienteIdRepuestos = 1;
     s.siguienteIdVehiculos = 1;
 }
 
 void liberarSistema(SistemaTaller &s, Taller infoTaller) {
-    for (int i = 0; i < s.numOrden; i++) {
-        delete[] s.orden[i].detalles;
+    for (int i = 0; i < s.numOrdenes; i++) {
+        delete[] s.ordenes[i].detalles;
     }
     
     delete[] s.vehiculos;
     delete[] s.repuestos;
     delete[] s.mecanicos;
-    delete[] s.orden;
+    delete[] s.ordenes; 
 
-}
+} 
 
 //SISTEMA DE VEHICULOS 
 void redimensionarVehiculos(SistemaTaller* s) {
@@ -343,7 +343,7 @@ void menuListarVehiculos(SistemaTaller* s) {
     cin >> datosNuevos.marca;
     cout << "Nuevo Modelo: ";
     cin >> datosNuevos.modelo;
-    cout << "Nuevo Anio: ";
+    cout << "Nueva fecha: ";
     cin >> datosNuevos.anio;
     cout << "Nuevo Kilometraje: ";
     cin >> datosNuevos.kilometraje;
@@ -756,27 +756,377 @@ void mostrarListaRepuestos(Repuesto** repuestos, int cantidad) {
 }
 
 //SISTEMA DE ORDEN DE SERVICIO
-OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, const char* descripcionFalla, int KilometrajeIngreso, const char* fechaActual);
+void redimensionarOrdenes(SistemaTaller* s) {
+    s->capacidadOrdenes *= 2;
+    OrdenServicio* nuevasOrdenes = new OrdenServicio[s->capacidadOrdenes];
 
-bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int cantidad);
-bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto);
-bool cerrarOrden(SistemaTaller* s, int idOrden, float manoObra, const char* fechaActual);
-bool anularOrden(SistemaTaller* s, int idOrden);
+    for (int i = 0; i < s->numOrdenes; i++) {
+        nuevasOrdenes[i] = s->ordenes[i];
+    }
 
-float calcularTotalOrden(OrdenServicio* Orden);
+    delete[] s->ordenes;
+    s->ordenes = nuevasOrdenes;
+}
 
-OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
+OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, const char* descripcionFalla, int KilometrajeIngreso, const char* fechaActual) {
+    if (s->numOrdenes >= s->capacidadOrdenes) {
+        redimensionarOrdenes(s);
+    }
 
-OrdenServicio** listaOrdenesPorEstado(SistemaTaller* s, const char* estado, int* cantidad);
-OrdenServicio** listaOrdenesPorVehiculo(SistemaTaller* s, int* vehiculo, int* cantidad);
-OrdenServicio** listaTodasLasOrdenes(SistemaTaller* s, int* cantidad);
+    OrdenServicio nuevaO;
+    nuevaO.id = s->siguienteIdOrdenes++;
+    nuevaO.idVehiculo = idVehiculo;
+    nuevaO.idMecanico = idMecanico;
+    strcpy(nuevaO.descripcionFalla, descripcionFalla);
+    nuevaO.kilometrajeIngreso = KilometrajeIngreso;
+    strcpy(nuevaO.fechaIngreso, fechaActual);
+    strcpy(nuevaO.fechaCierre, "Pendiente");
+    strcpy(nuevaO.estado, "Abierta");
+    nuevaO.manoObra = 0.0f;
+    nuevaO.total = 0.0f;
+    nuevaO.numRepuestosUsados = 0;
 
-void menuAbrirOrden(SistemaTaller* s);
-void menuAgregarRepuestoAOrden(SistemaTaller* s);
-void menuQuitarRepuestoDeOrden(SistemaTaller* s);
-void menuCerrarOrden(SistemaTaller* s);
-void menuAnularOrden(SistemaTaller* s);
-void menuVerDetalleOrden(SistemaTaller* s);
-void menuListarOrdenes(SistemaTaller* s);
-void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
-void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
+    s->ordenes[s->numOrdenes] = nuevaO;
+    s->numOrdenes++;
+
+    return &(s->ordenes[s->numOrdenes - 1]);
+}
+
+bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int cantidad) {
+    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
+    if (o == nullptr || strcmp(o->estado, "Abierta") !=0) return false;
+
+    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
+    if (r == nullptr || r->stock < cantidad) return false;
+
+    r->stock -= cantidad;
+
+    int idx = o->numRepuestosUsados;
+    o->repuestosUsados[idx].idRepuesto = r->id;
+    strcpy(o->repuestosUsados[idx].nombreRepuesto, r->nombre);
+    o->repuestosUsados[idx].precioUnitario = r->precio;
+    o->repuestosUsados[idx].cantidad = cantidad;
+    o->numRepuestosUsados++;
+
+    calcularTotalOrden(o);
+    return true;
+}
+
+bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto) {
+    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
+    if (o == nullptr || strcmp(o->estado, "Abierta") != 0) return false;
+
+    int pos = -1;
+    for (int i = 0; i < o->numRepuestosUsados; i++) {
+        if (o->repuestosUsados[i].idRepuesto == idRepuesto) {
+            pos = i;
+            break;
+        }
+    }
+
+    if (pos == -1) return false;
+
+    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
+    if (r != nullptr) {
+        r->stock += o->repuestosUsados[pos].cantidad;
+    }
+
+    for (int i = pos; i < o->numRepuestosUsados - 1; i++) {
+        o->repuestosUsados[i] = o->repuestosUsados[i + 1];
+    }
+    o->numRepuestosUsados--;
+
+    calcularTotalOrden(o);
+    return true;
+}
+
+bool cerrarOrden(SistemaTaller* s, int idOrden, float manoObra, const char* fechaActual) {
+    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
+    if (o == nullptr || strcmp(o->estado, "Abierta") != 0) return false;
+
+    o->manoObra = manoObra;
+    strcpy(o->fechaCierre, fechaActual);
+    strcpy(o->estado, "Cerrada");
+    calcularTotalOrden(o);
+    return true;
+}
+
+bool anularOrden(SistemaTaller* s, int idOrden) {
+    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
+    if (o == nullptr || strcmp(o->estado, "Abierta") != 0) return false;
+
+    for (int i = 0; i < o->numRepuestosUsados; i++) {
+        Repuesto* r = buscarRepuestoPorID(s, o->repuestosUsados[i].idRepuesto);
+        if (r != nullptr) {
+            r->stock += o->repuestosUsados[i].cantidad;
+        }
+    }
+
+    strcpy(o->estado, "Anulada");
+    return true;
+}
+
+float calcularTotalOrden(OrdenServicio* Orden) {
+    if (orden == nullptr) return 0.0f;
+
+    float costoRepuestos = 0.0f;
+    for (int i = 0; i < orden->numRepuestosUsados; i++) {
+        costoRepuestos += (orden->repuestosUsados[i].precioUnitario * orden->repuestosUsados[i].cantidad);
+    }
+
+    orden->total = orden->manoObra + costoRepuestos;
+    return orden->total;
+}
+
+OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id) {
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (s->ordenes[i].id == id) {
+            return &(s->ordenes[i]);
+        }
+    }
+    return nullptr;
+}
+
+OrdenServicio** listaOrdenesPorEstado(SistemaTaller* s, const char* estado, int* cantidad) {
+    int encontrados = 0;
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (strcmp(s->ordenes[i].estado, estado) == 0) {
+            encontrados++;
+        }
+    }
+    *cantidad = encontrados;
+    if (encontrados == 0) return nullptr;
+
+    OrdenServicio** lista = new OrdenServicio*[encontrados];
+    int j = 0;
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (strcmp(s->ordenes[i].estado, estado) == 0) {
+            lista[j++] = &(s->ordenes[i]);
+        }
+    }
+    return lista;
+}
+
+OrdenServicio** listaOrdenesPorVehiculo(SistemaTaller* s, int* vehiculo, int* cantidad) {
+    int encontrados = 0;
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (s->ordenes[i].idVehiculo == idVehiculo) {
+            encontrados++;
+        }
+    }
+    *cantidad = encontrados;
+    if (encontrados == 0) return nullptr;
+
+    OrdenServicio** lista = new OrdenServicio*[encontrados];
+    int j = 0;
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (s->ordenes[i].idVehiculo == idVehiculo) {
+            lista[j++] = &(s->ordenes[i]);
+        }
+    }
+    return lista;
+}
+
+OrdenServicio** listaTodasLasOrdenes(SistemaTaller* s, int* cantidad) {
+    *cantidad = s->numOrdenes;
+    if (s->numOrdenes == 0) return nullptr;
+
+    OrdenServicio** lista = new OrdenServicio*[s->numOrdenes];
+    for (int i = 0; i < s->numOrdenes; i++) {
+        lista[i] = &(s->ordenes[i]);
+    }
+    return lista;
+}
+
+void menuAbrirOrden(SistemaTaller* s) {
+    int idV, idM, km;
+    char falla[200], fecha[15];
+
+    cout << "\n--- ABRIR NUEVA ORDEN DE SERVICIO ---" << endl;
+    cout << "Ingrese ID del Vehiculo: ";
+    cin >> idV;
+    if (buscarVehiculoPorID(s, idV) == nullptr) {
+        cout << "[!] Error: El vehiculo no existe." << endl;
+        return;
+    }
+
+    cout << "Ingrese ID del Mecanico: ";
+    cin >> idM;
+    if (buscarMecanicoporID(s, idM) == nullptr) {
+        cout << "[!] Error: El mecanico no existe." << endl;
+        return;
+    }
+
+    cout << "Descripcion de la falla: ";
+    cin.ignore();
+    cin.getline(falla, 200);
+    cout << "Kilometraje de ingreso: ";
+    cin >> km;
+    cout << "Fecha actual (DD/MM/AAAA): ";
+    cin >> fecha;
+
+    abrirOrden(s, idV, idM, falla, km, fecha);
+    cout << "\n[OK] Orden abierta exitosamente." << endl;
+}
+
+void menuAgregarRepuestoAOrden(SistemaTaller* s) {
+    int idO, idR, cant;
+    cout << "\n--- AGREGAR REPUESTO A ORDEN ---" << endl;
+    cout << "Ingrese ID de la Orden: ";
+    cin >> idO;
+    cout << "Ingrese ID del Repuesto: ";
+    cin >> idR;
+    cout << "Cantidad: ";
+    cin >> cant;
+
+    if (agregarRepuestoAOrden(s, idO, idR, cant)) {
+        cout << "[OK] Repuesto agregado a la orden con exito." << endl;
+    } else {
+        cout << "[!] Error al agregar repuesto (verifique que la orden este abierta, el repuesto exista y haya stock)." << endl;
+    }
+}
+
+void menuQuitarRepuestoDeOrden(SistemaTaller* s) {
+    int idO, idR;
+    cout << "\n--- QUITAR REPUESTO DE ORDEN ---" << endl;
+    cout << "Ingrese ID de la Orden: ";
+    cin >> idO;
+    cout << "Ingrese ID del Repuesto a retirar: ";
+    cin >> idR;
+
+    if (quitarRepuestoDeOrden(s, idO, idR)) {
+        cout << "[OK] Repuesto retirado de la orden y devuelto al stock." << endl;
+    } else {
+        cout << "[!] Error al quitar el repuesto." << endl;
+    }
+}
+
+void menuCerrarOrden(SistemaTaller* s) {
+    int idO;
+    float manoObra;
+    char fecha[15];
+
+    cout << "\n--- CERRAR ORDEN DE SERVICIO ---" << endl;
+    cout << "Ingrese ID de la Orden a cerrar: ";
+    cin >> idO;
+    cout << "Costo de Mano de Obra: ";
+    cin >> manoObra;
+    cout << "Fecha de Cierre (DD/MM/AAAA): ";
+    cin >> fecha;
+
+    if (cerrarOrden(s, idO, manoObra, fecha)) {
+        cout << "[OK] Orden cerrada exitosamente. Total calculado." << endl;
+    } else {
+        cout << "[!] Error al cerrar la orden (verifique que este abierta)." << endl;
+    }
+}
+
+void menuAnularOrden(SistemaTaller* s) {
+    int idO;
+    cout << "\n--- ANULAR ORDEN DE SERVICIO ---" << endl;
+    cout << "Ingrese ID de la Orden a anular: ";
+    cin >> idO;
+
+    if (anularOrden(s, idO)) {
+        cout << "[OK] Orden anulada. Repuestos devueltos al inventario." << endl;
+    } else {
+        cout << "[!] Error al anular la orden." << endl;
+    }
+}
+
+void menuVerDetalleOrden(SistemaTaller* s) {
+    int idO;
+    cout << "\n--- CONSULTAR DETALLE DE ORDEN ---" << endl;
+    cout << "Ingrese ID de la Orden: ";
+    cin >> idO;
+    OrdenServicio* o = buscarOrdenPorID(s, idO);
+    mostrarDetalleOrden(s, o);
+}
+
+void menuListarOrdenes(SistemaTaller* s) {
+    int opc, cantidad = 0;
+    cout << "\n--- LISTAR ORDENES ---" << endl;
+    cout << "1. Listar todas" << endl;
+    cout << "2. Listar por Estado (Abierta / Cerrada / Anulada)" << endl;
+    cout << "3. Listar por Vehiculo (por ID)" << endl;
+    cout << "Seleccione una opcion: ";
+    cin >> opc;
+
+    if (opc == 1) {
+        OrdenServicio** lista = listaTodasLasOrdenes(s, &cantidad);
+        mostrarListaOrdenes(s, lista, cantidad);
+        delete[] lista;
+    } else if (opc == 2) {
+        char estado[20];
+        cout << "Ingrese estado a buscar (Ej. Abierta): ";
+        cin >> estado;
+        OrdenServicio** lista = listaOrdenesPorEstado(s, estado, &cantidad);
+        mostrarListaOrdenes(s, lista, cantidad);
+        delete[] lista;
+    } else if (opc == 3) {
+        int idV;
+        cout << "Ingrese ID del Vehiculo: ";
+        cin >> idV;
+        OrdenServicio** lista = listaOrdenesPorVehiculo(s, idV, &cantidad);
+        mostrarListaOrdenes(s, lista, cantidad);
+        delete[] lista;
+    } else {
+        cout << "[!] Opcion invalida." << endl;
+    }
+}
+
+void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
+    if (orden == nullptr) {
+        cout << "[!] Orden de servicio no encontrada." << endl;
+        return;
+    }
+
+    Vehiculo* v = buscarVehiculoPorID(s, orden->idVehiculo);
+    Mecanico* m = buscarMecanicoporID(s, orden->idMecanico);
+
+    cout << "\n----------------------------------------" << endl;
+    cout << " ORDEN DE SERVICIO # " << orden->id << endl;
+    cout << " Estado: " << orden->estado << endl;
+    cout << " Fecha Ingreso: " << orden->fechaIngreso << " | Cierre: " << orden->fechaCierre << endl;
+    cout << " Kilometraje Ingreso: " << orden->kilometrajeIngreso << " km" << endl;
+    cout << " Falla reportada: " << orden->descripcionFalla << endl;
+    
+    cout << " --- VEHICULO ASOCIADO ---" << endl;
+    if (v != nullptr) {
+        cout << " Placa: " << v->placa << " | " << v->marca << " " << v->modelo << " (" << v->anio << ")" << endl;
+        cout << " Propietario: " << v->nombrePropietario << endl;
+    } else {
+        cout << " [!] Vehiculo con ID " << orden->idVehiculo << " no encontrado o eliminado." << endl;
+    }
+
+    cout << " --- MECANICO ASIGNADO ---" << endl;
+    if (m != nullptr) {
+        cout << " Nombre: " << m->nombre << " (Especialidad: " << m->especialidad << ")" << endl;
+    } else {
+        cout << " [!] Mecanico con ID " << orden->idMecanico << " no encontrado." << endl;
+    }
+
+    cout << " --- REPUESTOS UTILIZADOS (" << orden->numRepuestosUsados << ") ---" << endl;
+    for (int i = 0; i < orden->numRepuestosUsados; i++) {
+        cout << "  - " << orden->repuestosUsados[i].nombreRepuesto 
+             << " x" << orden->repuestosUsados[i].cantidad 
+             << " ($" << orden->repuestosUsados[i].precioUnitario << " c/u)" << endl;
+    }
+
+    calcularTotalOrden(orden);
+    cout << " Mano de Obra: $" << orden->manoObra << endl;
+    cout << " TOTAL A PAGAR: $" << orden->total << endl;
+    cout << "----------------------------------------" << endl;
+}
+
+void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad) {
+    if (ordenes == nullptr || cantidad == 0) {
+        cout << "\n[!] No hay ordenes para mostrar." << endl;
+        return;
+    }
+    cout << "\n=== LISTADO DE ORDENES (" << cantidad << ") ===" << endl;
+    for (int i = 0; i < cantidad; i++) {
+        cout << "[ID Orden: " << ordenes[i]->id << "] - Vehiculo ID: " << ordenes[i]->idVehiculo 
+             << " - Estado: " << ordenes[i]->estado << " - Total: $" << ordenes[i]->total << endl;
+    }
+}
