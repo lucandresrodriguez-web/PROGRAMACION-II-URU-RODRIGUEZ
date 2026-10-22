@@ -1,0 +1,90 @@
+Secuencia de casos:
+
+Caso 1:
+1
+1
+AB123CD
+Toyota
+34
+2022
+350
+Maria Gonzalez
+24556788
+0424897765
+S
+(Enter)
+1
+XY987ZW
+Ferrari
+245
+2023
+400
+Maria Gonzalez
+24556788
+0424897765
+S
+(Enter)
+1
+ABRT3RF
+Bugati
+56
+2021
+600
+Victor Kneider
+23248274
+04245678890
+S
+(Enter)
+2
+3
+Gonz
+(Enter)
+(Enter)
+2
+2
+XY987ZW
+(Enter)
+5
+(Enter)
+0
+(Enter)
+
+Caso 2: 
+3
+1
+09876
+Pepe Campa
+SKF
+20
+15
+12
+S
+(Enter)
+1
+75867
+Juan Diego
+Continental
+35
+120
+120
+S
+(Enter)
+1
+75755
+Pedro Paramo
+Mahle
+50
+100
+85
+S
+(Enter)
+1
+48478
+Francisco Javier
+Valeo
+60
+85
+75
+S
+(Enter)
+6
