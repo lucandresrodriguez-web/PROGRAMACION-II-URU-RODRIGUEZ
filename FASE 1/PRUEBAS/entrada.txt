@@ -53,7 +53,7 @@ Caso 2:
 3
 1
 09876
-Pepe Campa
+Filtro de aceite
 SKF
 20
 15
@@ -62,7 +62,7 @@ S
 (Enter)
 1
 75867
-Juan Diego
+Bujias
 Continental
 35
 120
@@ -71,7 +71,7 @@ S
 (Enter)
 1
 75755
-Pedro Paramo
+Pistones
 Mahle
 50
 100
@@ -80,7 +80,7 @@ S
 (Enter)
 1
 48478
-Francisco Javier
+Anillos de Pistones
 Valeo
 60
 85
@@ -88,3 +88,239 @@ Valeo
 S
 (Enter)
 6
+2
+120
+S
+(Enter)
+6
+0
+(Enter)
+
+Caso 3:
+2
+1
+Guillermo Arias
+2344566
+MOTOR
+(Enter)
+0
+4
+1
+1
+Conflictos en el motor principal"
+4500
+S
+(Enter)
+2
+1
+1
+2
+S
+2
+1
+2
+1
+S
+(Enter)
+6
+1
+(Enter)
+2
+1
+1
+1
+S
+(Enter)
+3
+1
+2
+(Enter)
+6
+(Enter)
+4
+1
+60
+S
+6
+(Enter)
+0
+(Enter)
+
+Caso 4:
+3
+4
+1
+25
+S
+(Enter)
+0
+(Enter)
+4
+6
+1
+(Enter)
+1
+2
+1
+"Respaldo de motor"
+3000
+S
+(Enter)
+2
+2
+1
+1
+(Enter)
+6
+(Enter)
+0
+(Enter)
+
+Caso 5:
+4
+5
+2
+S
+(Enter)
+7
+2
+Anulada
+(Enter)
+0
+(Enter)
+3
+6
+(Enter)
+0
+(Enter)
+
+Caso 6:
+1
+1
+AB123CD (Placa ya registrada, se pedira otra para continuar)
+cancelar
+(Enter)
+0
+(Enter)
+4
+1
+1 (Dara error al ya tener un vehiculo en una orden)
+cancelar
+(Enter)
+1
+2
+1 (Dara error al ya tener a ese mecanico en una orden)
+cancelar
+(Enter)
+1
+2
+2
+30 (No se permite pues es menor al registrado)
+cancelar
+(Enter)
+2
+1
+1
+40
+S (Error al registrar los repuestos)
+(Enter)
+2
+3 (orden cerrada)
+1
+4 
+S (Error al ver que la orden esta cerrada)
+(Enter)
+0 
+(Enter)
+1
+4
+1
+S (Rechazado al tener una orden asociada)
+(Enter)
+0
+(Enter)
+3
+5
+1
+S (Rechazado al tener una orden asociada)
+(Enter)
+0
+(Enter)
+
+Caso 7: (Tomamos en cuenta los otros 3 vehiculos anteriormente)
+1
+1
+QWE3456
+tesla
+234
+2026
+450
+Elon Andres
+324225555
+04127857875
+S
+(Enter)
+1
+EIEW8E9
+Porche
+3245
+2025
+390
+Lucas Ramirez
+234242556
+0414667884
+S
+(Enter)
+5
+(Enter)
+0
+(Enter)
+4
+1
+4
+1
+"Se encuentra en mal estado"
+3000
+S
+(Enter)
+2
+4
+2
+1
+S
+(Enter)
+2
+4
+3
+1
+S
+(Enter)
+2
+4
+4
+1
+S
+(Enter)
+6
+4
+(Enter)
+0
+(Enter)
+
+Caso 8
+1
+1
+QRUE87
+Honda
+256
+2024
+320
+Raul Torres
+324244234
+04127435375
+cancelar
+(Enter)
+5
+(Enter)
+0
+(Enter)
