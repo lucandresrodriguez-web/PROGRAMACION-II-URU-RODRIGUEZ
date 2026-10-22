@@ -11,7 +11,7 @@
 using namespace std;
 
 void limpiarTerminal() {
-#ifdef_WIN32
+#ifdef _WIN32
     system("cls");
 #else
     system("clear");
@@ -207,32 +207,32 @@ void mostrarOpcionVolver() {
 //SISTEMA GENERAL 
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
 
-    s.tallerInfo = infoTaller;
+    s.taller = infoTaller;
 
     s.capacidadVehiculos = 4;
     s.capacidadRepuestos = 4;
     s.capacidadMecanicos = 4;
     s.capacidadOrdenes = 4;
 
-    s.vehiculos = new Vehiculos[s.capacidadVehiculos];
-    s.repuestos = new Repuestos[s.capacidadRepuestos];
-    s.mecanicos = new Mecanicos[s.capacidadMecanicos];
-    s.ordenes = new OrdenesServicio[s.capacidadOrdenes];
+    s.vehiculos = new Vehiculo[s.capacidadVehiculos];
+    s.repuestos = new Repuesto[s.capacidadRepuestos];
+    s.mecanicos = new Mecanico[s.capacidadMecanicos];
+    s.ordenes = new OrdenServicio[s.capacidadOrdenes];
 
-    s.numVehiculos = 0;
-    s.numRepuestos = 0;
-    s.numMecanicos = 0;
-    s.numOrdenes = 0;
+    s.numVehiculo = 0;
+    s.numRepuesto = 0;
+    s.numMecanico = 0;
+    s.numOrden = 0;
 
-    s.siguienteIdMecanicos = 1;
-    s.siguienteIdOrdenes = 1;
-    s.siguienteIdRepuestos = 1;
-    s.siguienteIdVehiculos = 1;
+    s.siguienteIdMecanico = 1;
+    s.siguienteIdOrden = 1;
+    s.siguienteIdRepuesto = 1;
+    s.siguienteIdVehiculo = 1;
 }
 
 void liberarSistema(SistemaTaller &s, Taller infoTaller) {
-    for (int i = 0; i < s.numOrdenes; i++) {
-        delete[] s.ordenes[i].detalles;
+    for (int i = 0; i < s.numOrden; i++) {
+        delete[] s.Ordenes[i].detalles;
     }
     
     delete[] s.vehiculos;
@@ -377,7 +377,7 @@ bool igualSinMayusculas(const char* a, const char* b) {
 
 //SISTEMA DE VEHICULOS 
 void redimensionarVehiculos(SistemaTaller* s) {
-    s->capacidadVehiculos *= 2; 
+    s->capacidadVehiculo *= 2; 
     Vehiculo* nuevosVehiculos = new Vehiculo[s->capacidadVehiculos];
 
     for (int i = 0; i < s->numVehiculos; i++) {
@@ -469,7 +469,7 @@ Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad) {
     if (s->numVehiculos == 0) return nullptr;
 
     Vehiculo** lista = new Vehiculo*[s->numVehiculos];
-    for (int i = 0; i < s->nuevosVehiculos; i++) {
+    for (int i = 0; i < s->numVehiculos; i++) {
         lista[i] = &(s->vehiculos[i]);
     }
     return lista;
@@ -517,7 +517,7 @@ bool eliminarVehiculo(SistemaTaller* s, int id) {
     return true;
 };
 
-void menuRegistrarVehiculo(SistemaTaller* s) {
+void menuVehiculo(SistemaTaller* s) {
     if (vehiculo == nullptr) {
         cout << "[!] Vehiculo no encontrado." << endl;
         return;
@@ -729,7 +729,7 @@ Mecanico* buscarMecanicoporID(SistemaTaller* s, int id) {
 };
 
 Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula) {
-    for (int i = 0; i < ->numMecanicos; i++) {
+    for (int i = 0; i < s->numMecanicos; i++) {
         if (strcmp(s->mecanicos[i].cedula, cedula) == 0) {
             return &(s->mecanicos[i]);
         }
@@ -869,7 +869,7 @@ Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos) {
     return &(s->repuestos[s->numRepuestos - 1]);
 };
 
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id); {
+Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id) {
     for (int i = 0; i < s->numRepuestos; i++) {
         if (s->repuestos[i].id == id) {
             return &(s->repuestos[i]);
@@ -977,7 +977,7 @@ void menuBuscarRepuesto(SistemaTaller* s) {
 
     if (opc == 1) {
         int id = 0;
-        if (!leerValor("Ingrese ID del repuesto: ", id)) returnl
+        if (!leerValor("Ingrese ID del repuesto: ", id)) return;
         Repuesto* r = buscarRepuestoPorID(s, id);
         mostrarRepuesto(r);
     } else if (opc == 2) {
@@ -1434,7 +1434,7 @@ void menuListarOrdenes(SistemaTaller* s) {
         delete[] lista;
     } else if (opc == 3) {
         int idV = 0;
-        if (!leerValor("Ingrese ID del vehiculo: ", idv)) return;
+        if (!leerValor("Ingrese ID del vehiculo: ", idV)) return;
         OrdenServicio** lista = listaOrdenesPorVehiculo(s, idV, &cantidad);
         mostrarListaOrdenes(s, lista, cantidad);
         delete[] lista;
@@ -1496,7 +1496,7 @@ void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad
     }
     cout << "\n=== LISTADO DE ORDENES (" << cantidad << ") ===" << endl;
     for (int i = 0; i < cantidad; i++) {
-        float total = calcularTotalOrden(orden[i]);
+        float total = calcularTotalOrden(ordenes[i]);
         cout << "[ID Orden: " << ordenes[i]->id << "] - Vehiculo ID: " << ordenes[i]->idVehiculo 
              << " - Estado: " << ordenes[i]->estado << " - Total: $" << ordenes[i]->total << endl;
     }
