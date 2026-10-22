@@ -1,6 +1,3 @@
-Secuencia de casos:
-
-Caso 1:
 1
 1
 AB123CD
@@ -12,7 +9,6 @@ Maria Gonzalez
 24556788
 0424897765
 S
-(Enter)
 1
 XY987ZW
 Ferrari
@@ -23,7 +19,6 @@ Maria Gonzalez
 24556788
 0424897765
 S
-(Enter)
 1
 ABRT3RF
 Bugati
@@ -34,22 +29,14 @@ Victor Kneider
 23248274
 04245678890
 S
-(Enter)
 2
 3
 Gonz
-(Enter)
-(Enter)
 2
 2
 XY987ZW
-(Enter)
 5
-(Enter)
 0
-(Enter)
-
-Caso 2: 
 3
 1
 09876
@@ -59,7 +46,6 @@ SKF
 15
 12
 S
-(Enter)
 1
 75867
 Bujias
@@ -68,7 +54,6 @@ Continental
 120
 120
 S
-(Enter)
 1
 75755
 Pistones
@@ -77,7 +62,6 @@ Mahle
 100
 85
 S
-(Enter)
 1
 48478
 Anillos de Pistones
@@ -86,130 +70,94 @@ Valeo
 85
 75
 S
-(Enter)
 6
-(Enter)
 3
 2
 40
 S
-(Enter)
 6
 0
-(Enter)
-
-Caso 3:
 2
 1
 Guillermo Arias
 2344566
 MOTOR
 S
-(Enter)
 0
 4
 1
 1
-Conflictos en el motor principal"
+Conflictos en el motor principal
 4500
 S
-(Enter)
 2
 1
 1
 2
 S
-(Enter)
 2
 1
 2
 1
 S
-(Enter)
 6
 1
-(Enter)
 2
 1
 1
 1
 S
-(Enter)
 3
 1
 2
 S
-(Enter)
 6
 1
-(Enter)
 4
 1
 60
 S
 6
 1
-(Enter)
 0
-(Enter)
-
-Caso 4:
 3
 4
 1
 25
 S
-(Enter)
 0
-(Enter)
 4
 6
 1
-(Enter)
 1
 2
 1
-"Respaldo de motor"
+Respaldo de motor
 3000
 S
-(Enter)
 2
 2
 1
 1
 S
-(Enter)
 6
 2
-(Enter)
 0
-(Enter)
-
-Caso 5:
 4
 5
 2
 S
-(Enter)
 7
 1
-(Enter)
 0
-(Enter)
 3
 6
-(Enter)
 0
-(Enter)
-
-Caso 6:
 1
 1
-AB123CD (Placa ya registrada, se pedira otra para continuar)
+AB123CD
 cancelar
-(Enter)
 0
-(Enter)
 4
 1
 3
@@ -217,58 +165,45 @@ cancelar
 Mal funcionamiento
 4000
 S
-(Enter)
 1
 3
 1
 Mal funcionamiento
 3000
-S (No se pudo abrir)
-(Enter)
+S 
 1
 3
 1
 Motor quemado
 2500
-S (No se pudo abrir)
-(Enter)
+S
 1
 3
 1
 Motor descompuesto
 1000
-s (no se pudo abrir)
-(Enter)
+s
 2
 3
 1
 40
-s (error al agregar respuesto)
-(Enter)
+s 
 2
 2
 1
 2
-S (error al agregar repuesto)
-(Enter)
+S 
 0
-(Enter)
 1
 4
 3
-S (Tiene ordenes asociadas)
-(Enter)
+S 
 0 
-(Enter)
 3
 5
 1
-s (asociado a una orden)
-(Enter)
+s 
 0
-(Enter)
-
-Caso 7: (Tomamos en cuenta los otros 3 vehiculos anteriormente)
 1
 1
 QWE3456
@@ -280,7 +215,6 @@ Elon Andres
 324225555
 04127857875
 S
-(Enter)
 1
 EIEW8E9
 Porche
@@ -291,43 +225,32 @@ Lucas Ramirez
 234242556
 0414667884
 S
-(Enter)
 5
-(Enter)
 0
-(Enter)
 4
 1
 4
 1
-"Se encuentra en mal estado"
+Se encuentra en mal estado
 3000
 S
-(Enter)
 2
 4
 2
 1
 S
-(Enter)
 2
 4
 3
 1
 S
-(Enter)
 2
 4
 4
 1
 S
-(Enter)
 6
-(Enter)
 0
-(Enter)
-
-Caso 8
 1
 1
 QRUE87
@@ -339,8 +262,5 @@ Raul Torres
 324244234
 04127435375
 cancelar
-(Enter)
 5
-(Enter)
 0
-(Enter)
