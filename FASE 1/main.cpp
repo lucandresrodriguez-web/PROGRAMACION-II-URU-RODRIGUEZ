@@ -219,20 +219,20 @@ void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
     s.mecanicos = new Mecanico[s.capacidadMecanicos];
     s.ordenes = new OrdenServicio[s.capacidadOrdenes];
 
-    s.numVehiculo = 0;
-    s.numRepuesto = 0;
-    s.numMecanico = 0;
-    s.numOrden = 0;
+    s.numVehiculos = 0;
+    s.numRepuestos = 0;
+    s.numMecanicos = 0;
+    s.numOrdenes = 0;
 
-    s.siguienteIdMecanico = 1;
-    s.siguienteIdOrden = 1;
-    s.siguienteIdRepuesto = 1;
-    s.siguienteIdVehiculo = 1;
+    s.siguienteIdMecanicos = 1;
+    s.siguienteIdOrdenes = 1;
+    s.siguienteIdRepuestos = 1;
+    s.siguienteIdVehiculos = 1;
 }
 
 void liberarSistema(SistemaTaller &s, Taller infoTaller) {
-    for (int i = 0; i < s.numOrden; i++) {
-        delete[] s.Ordenes[i].detalles;
+    for (int i = 0; i < s.numOrdenes; i++) {
+        delete[] s.ordenes[i].repuestosUsados;
     }
     
     delete[] s.vehiculos;
@@ -437,7 +437,7 @@ Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id) {
 
 Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa){
     for (int i = 0; i < s->numVehiculos; i++) {
-        if (igualSinMayusculas(s->vehiculos[i],placa, placa)) {
+        if (igualSinMayusculas(s->vehiculos[i].placa, placa)) {
             return &(s->vehiculos[i]);
         }
     }
@@ -1245,7 +1245,7 @@ float calcularTotalOrden(OrdenServicio* Orden) {
         costoRepuestos += (orden->repuestosUsados[i].precioUnitario * orden->repuestosUsados[i].cantidad);
     }
 
-    return orden->total;
+    return orden->manoObra + costoRepuestos;
 }
 
 OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id) {
@@ -1484,7 +1484,7 @@ void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
 
     float total = calcularTotalOrden(orden);
     cout << " Mano de Obra: $" << orden->manoObra << endl;
-    cout << " TOTAL A PAGAR: $" << orden->total << endl;
+    cout << " TOTAL A PAGAR: $" << total << endl;
     cout << "----------------------------------------" << endl;
 }
 
