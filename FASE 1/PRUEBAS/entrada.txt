@@ -88,8 +88,10 @@ Valeo
 S
 (Enter)
 6
+(Enter)
+3
 2
-120
+40
 S
 (Enter)
 6
@@ -102,6 +104,7 @@ Caso 3:
 Guillermo Arias
 2344566
 MOTOR
+S
 (Enter)
 0
 4
@@ -116,6 +119,7 @@ S
 1
 2
 S
+(Enter)
 2
 1
 2
@@ -134,14 +138,17 @@ S
 3
 1
 2
+S
 (Enter)
 6
+1
 (Enter)
 4
 1
 60
 S
 6
+1
 (Enter)
 0
 (Enter)
@@ -170,8 +177,10 @@ S
 2
 1
 1
+S
 (Enter)
 6
+2
 (Enter)
 0
 (Enter)
@@ -183,8 +192,7 @@ Caso 5:
 S
 (Enter)
 7
-2
-Anulada
+1
 (Enter)
 0
 (Enter)
@@ -204,45 +212,58 @@ cancelar
 (Enter)
 4
 1
-1 (Dara error al ya tener un vehiculo en una orden)
-cancelar
+3
+1
+Mal funcionamiento
+4000
+S
 (Enter)
 1
-2
-1 (Dara error al ya tener a ese mecanico en una orden)
-cancelar
+3
+1
+Mal funcionamiento
+3000
+S (No se pudo abrir)
 (Enter)
 1
-2
-2
-30 (No se permite pues es menor al registrado)
-cancelar
+3
+1
+Motor quemado
+2500
+S (No se pudo abrir)
+(Enter)
+1
+3
+1
+Motor descompuesto
+1000
+s (no se pudo abrir)
 (Enter)
 2
-1
+3
 1
 40
-S (Error al registrar los repuestos)
+s (error al agregar respuesto)
 (Enter)
 2
-3 (orden cerrada)
+2
 1
-4 
-S (Error al ver que la orden esta cerrada)
+2
+S (error al agregar repuesto)
 (Enter)
-0 
+0
 (Enter)
 1
 4
-1
-S (Rechazado al tener una orden asociada)
+3
+S (Tiene ordenes asociadas)
 (Enter)
-0
+0 
 (Enter)
 3
 5
 1
-S (Rechazado al tener una orden asociada)
+s (asociado a una orden)
 (Enter)
 0
 (Enter)
@@ -302,7 +323,6 @@ S
 S
 (Enter)
 6
-4
 (Enter)
 0
 (Enter)
