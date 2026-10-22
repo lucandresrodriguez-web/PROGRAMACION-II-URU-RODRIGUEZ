@@ -8,8 +8,8 @@ Lucas Andres Rodriguez Machado
 
 ## Carrera: Ingenieria de Computacion
 
-En este repositorio, se inlcuiran todos los proyectos y codigos relacionados con la materia,
-se iran documentando los avances, progresos y entregas de cada uno de estos mismos durante el trimestre.
+En este repositorio, se inlcuiran todos los proyectos y codigos relacionados con la materia en cuestion,
+se documentaran los avances, progresos y entregas de cada uno de estos mismos durante el trimestre actual.
 
 ### Clases vistas:
 
@@ -21,7 +21,8 @@ se iran documentando los avances, progresos y entregas de cada uno de estos mism
 
 ## Poyectos a realizar:
 
-PROYECTO 1: Taller mecanico (Colaboracion con Isidro Marmol)
+PROYECTO 1: Taller mecanico (Colaboracion con Isidro Marmol) 
+ENTREGADO: 22-10-2026
 
 ### Ejercicios realizados por cuenta propia:
 
