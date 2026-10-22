@@ -1,2252 +1,0 @@
-Nombre del taller: RIF: Direccion: Telefono: 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
-[!] No hay mecanicos registrados para mostrar.
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- BUSCAR MECANICO ---
-1. Buscar por ID
-2. Buscar por cedula
-Seleccione una opcion: [!] Valor invalido; intentelo de nuevo.
-Seleccione una opcion: [!] Valor invalido; intentelo de nuevo.
-Seleccione una opcion: [!] Opcion Invalida.
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO REPUESTO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Codigo: Nombre: Marca: Precio unitario (> 0): Stock inicial (0 o mayor): Stock minimo (0 o mayor): Guardar repuesto (S/N): 
-[OK] Repuesto registrado exitosamente
-
-Presione Enter para volver al menu...
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: 
---- BUSCAR REPUESTO ---
-1. Buscar por ID
-2. Buscar por Codigo
-3. Buscar por Nombre (parcial)
-Seleccione una opcion: [!] Opcion Invalida.
-
-Presione Enter para volver al menu...
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO MECANICO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Nombre completo: Cedula: Especialidad (MOTOR, FRENOS, ELECTRICIDAD, SUSPENSION, GENERAL): Guardar mecanico (S/N): 
-[OK] Mecanico registrado exitosamente.
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO MECANICO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Nombre completo: Cedula: Especialidad (MOTOR, FRENOS, ELECTRICIDAD, SUSPENSION, GENERAL): Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): 
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO MECANICO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Nombre completo: Cedula: Especialidad (MOTOR, FRENOS, ELECTRICIDAD, SUSPENSION, GENERAL): Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): 
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO MECANICO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Nombre completo: Cedula: Especialidad (MOTOR, FRENOS, ELECTRICIDAD, SUSPENSION, GENERAL): Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): [!] Cedula duplicada o datos invalidos.
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO REPUESTO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Codigo: Nombre: Marca: Precio unitario (> 0): Stock inicial (0 o mayor): Stock minimo (0 o mayor): [!] Ingrese un numero entero entre 0 y 2147483647.
-Stock minimo (0 o mayor): Guardar repuesto (S/N): [!] Responda S o N.
-Guardar repuesto (S/N): [!] Responda S o N.
-Guardar repuesto (S/N): [!] Responda S o N.
-Guardar repuesto (S/N): 
-[OK] Repuesto registrado exitosamente
-
-Presione Enter para volver al menu...
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO REPUESTO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Codigo: Nombre: Marca: Precio unitario (> 0): [!] El campo no puede quedar vacio.
-Precio unitario (> 0): [!] Ingrese un numero entre 2.22507e-308 y 3.40282e+38.
-Precio unitario (> 0): Stock inicial (0 o mayor): Stock minimo (0 o mayor): Guardar repuesto (S/N): [!] Responda S o N.
-Guardar repuesto (S/N): [!] Responda S o N.
-Guardar repuesto (S/N): 
-[OK] Repuesto registrado exitosamente
-
-Presione Enter para volver al menu...
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: 
---- CONSULTAR DETALLE DE ORDEN ---
-Ingrese ID de la Orden: [!] Orden de servicio no encontrada.
-
-Presione Enter para volver al menu...
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- BUSCAR VEHICULO ---
-1. Por ID
-2. Por placa
-3. Por propietario
-Opcion: ID: [!] Valor invalido; intentelo de nuevo.
-ID: [!] Vehiculo no encontrado.
-
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- BUSCAR MECANICO ---
-1. Buscar por ID
-2. Buscar por cedula
-Seleccione una opcion: Ingrese ID del mecanico: -------------------------------------------
-ID: 1
-Nombre: Guillermo Arias
-Cedula: 2344566
-Especialidad: MOTOR
-Fecha Ingreso: 2026-10-21
---------------------------------------------
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: 
---- ANULAR ORDEN DE SERVICIO ---
-Ingrese ID de la Orden a anular: Anular orden (S/N): [!] Error al anular la orden.
-
-Presione Enter para volver al menu...
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: 
-=== LISTA DE REPUESTOS (3) ===
--------------------------------------------
-ID: 1
-Nombre: Filtro de aceite
-Codigo: 09876
-Marca: SKF
-Precio $: 20
-Stock disponible: 15
-Stock minimo: 12
---------------------------------------------
--------------------------------------------
-ID: 2
-Nombre: S
-Codigo: 2
-Marca: (Enter)
-Precio $: 6
-Stock disponible: 1 [BAJO STOCK]
-Stock minimo: 4
---------------------------------------------
--------------------------------------------
-ID: 3
-Nombre: 0
-Codigo: (Enter)
-Marca: (Enter)
-Precio $: 3
-Stock disponible: 4
-Stock minimo: 1
---------------------------------------------
-
-Presione Enter para volver al menu...
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- REGISTRAR VEHICULO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Placa (6-7 caracteres alfanumericos): [!] El texto excede el limite permitido.
-Placa (6-7 caracteres alfanumericos): 
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: 
---- ABRIR NUEVA ORDEN DE SERVICIO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Ingrese ID del Vehiculo: [!] Error: El vehiculo no existe.
-
-Presione Enter para volver al menu...
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- ACTUALIZAR VEHICULO ---
-Ingrese el ID del vehiculo a actualizar: [!] No se encontro un vehiculo con el ID 1
-
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- ACTUALIZAR VEHICULO ---
-Ingrese el ID del vehiculo a actualizar: [!] No se encontro un vehiculo con el ID 1
-
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- ACTUALIZAR VEHICULO ---
-Ingrese el ID del vehiculo a actualizar: [!] No se encontro un vehiculo con el ID 1
-
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
-=== LISTA DE MECANCIOS (1) ===
--------------------------------------------
-ID: 1
-Nombre: Guillermo Arias
-Cedula: 2344566
-Especialidad: MOTOR
-Fecha Ingreso: 2026-10-21
---------------------------------------------
-Ordenes abiertas: 0
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- BUSCAR MECANICO ---
-1. Buscar por ID
-2. Buscar por cedula
-Seleccione una opcion: Ingrese ID del mecanico: [!] Mecanico no encontrado.
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- ELIMINAR VEHICULO ---
-ID: Eliminar vehiculo (S/N): [!] No existe o tiene ordenes asociadas.
-
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: 
---- ELIMINAR REPUESTO ---
-Ingrese el ID del repuesto a eliminar: Eliminar repuesto (S/N): [OK] Repuesto eliminado exitosamente.
-
-Presione Enter para volver al menu...
---- REPUESTOS ---
-1. Registrar
-2. Buscar
-3. Entrada de mercancia
-4. Cambiar precio
-5. Eliminar
-6. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- REGISTRAR VEHICULO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Placa (6-7 caracteres alfanumericos): Marca: Modelo: Anio (1950-2027): Kilometraje (0 o mayor): Nombre del propietario: Cedula del propietario (digitos, V- o E- opcional): Telefono del propietario (7-15 digitos): Guardar vehiculo (S/N): [OK] Vehiculo registrado.
-
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
-=== LISTA GENERAL DE REGISTROS ===
-Vehiculos registrados: 1
-
---- DETALLE DEL VEHICULO ---
-ID: 1
-Placa: QWE3456
-Marca: tesla
-Modelo: 234
-Anio: 2026
-Kilometraje: 450
-Fecha de registro: 2026-10-21
-Propietario: Elon Andres
-Cedula del propietario: 324225555
-Telefono del propietario: 04127857875
-
-Mecanicos registrados: 1
--------------------------------------------
-ID: 1
-Nombre: Guillermo Arias
-Cedula: 2344566
-Especialidad: MOTOR
-Fecha Ingreso: 2026-10-21
---------------------------------------------
-Ordenes abiertas: 0
-
-Repuestos registrados: 2
--------------------------------------------
-ID: 2
-Nombre: S
-Codigo: 2
-Marca: (Enter)
-Precio $: 6
-Stock disponible: 1 [BAJO STOCK]
-Stock minimo: 4
---------------------------------------------
--------------------------------------------
-ID: 3
-Nombre: 0
-Codigo: (Enter)
-Marca: (Enter)
-Precio $: 3
-Stock disponible: 4
-Stock minimo: 1
---------------------------------------------
-
-Ordenes de servicio registradas: 0
-  No hay ordenes.
-
-Presione Enter para volver al menu...
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: 
---- ABRIR NUEVA ORDEN DE SERVICIO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Ingrese ID del Vehiculo: [!] Error: El vehiculo no existe.
-
-Presione Enter para volver al menu...
---- ORDENES DE SERVICIO ---
-1. Abrir orden
-2. Agregar repuesto
-3. Quitar repuesto
-4. Cerrar orden
-5. Anular orden
-6. Ver detalle
-7. Listar ordenes
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Opcion invalida.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- BUSCAR MECANICO ---
-1. Buscar por ID
-2. Buscar por cedula
-Seleccione una opcion: Ingrese ID del mecanico: [!] Valor invalido; intentelo de nuevo.
-Ingrese ID del mecanico: [!] Valor invalido; intentelo de nuevo.
-Ingrese ID del mecanico: [!] Mecanico no encontrado.
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
-=== LISTA DE MECANCIOS (1) ===
--------------------------------------------
-ID: 1
-Nombre: Guillermo Arias
-Cedula: 2344566
-Especialidad: MOTOR
-Fecha Ingreso: 2026-10-21
---------------------------------------------
-Ordenes abiertas: 0
-
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Opcion invalida.
-
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: 
---- REGISTRAR NUEVO MECANICO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Nombre completo: Cedula: Especialidad (MOTOR, FRENOS, ELECTRICIDAD, SUSPENSION, GENERAL): Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): [!] Responda S o N.
-Guardar mecanico (S/N): 
-Presione Enter para volver al menu...
---- MECANICOS ---
-1. Registrar
-2. Buscar
-3. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: 
---- REGISTRAR VEHICULO ---
-Escriba CANCELAR en cualquier campo para volver al menu.
-Placa (6-7 caracteres alfanumericos): Marca: Modelo: Anio (1950-2027): Kilometraje (0 o mayor): Nombre del propietario: Cedula del propietario (digitos, V- o E- opcional): Telefono del propietario (7-15 digitos): Guardar vehiculo (S/N): [!] Responda S o N.
-Guardar vehiculo (S/N): [!] Responda S o N.
-Guardar vehiculo (S/N): 
-Presione Enter para volver al menu...
---- VEHICULOS ---
-1. Registrar
-2. Buscar
-3. Actualizar
-4. Eliminar
-5. Listar
-0. Volver
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
-=== LISTA GENERAL DE REGISTROS ===
-Vehiculos registrados: 1
-
---- DETALLE DEL VEHICULO ---
-ID: 1
-Placa: QWE3456
-Marca: tesla
-Modelo: 234
-Anio: 2026
-Kilometraje: 450
-Fecha de registro: 2026-10-21
-Propietario: Elon Andres
-Cedula del propietario: 324225555
-Telefono del propietario: 04127857875
-
-Mecanicos registrados: 1
--------------------------------------------
-ID: 1
-Nombre: Guillermo Arias
-Cedula: 2344566
-Especialidad: MOTOR
-Fecha Ingreso: 2026-10-21
---------------------------------------------
-Ordenes abiertas: 0
-
-Repuestos registrados: 2
--------------------------------------------
-ID: 2
-Nombre: S
-Codigo: 2
-Marca: (Enter)
-Precio $: 6
-Stock disponible: 1 [BAJO STOCK]
-Stock minimo: 4
---------------------------------------------
--------------------------------------------
-ID: 3
-Nombre: 0
-Codigo: (Enter)
-Marca: (Enter)
-Precio $: 3
-Stock disponible: 4
-Stock minimo: 1
---------------------------------------------
-
-Ordenes de servicio registradas: 0
-  No hay ordenes.
-
-Presione Enter para volver al menu...
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): [!] Responda S o N.
-Salir del sistema (S/N): 
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: [!] Ingrese un numero.
-
-=== Secuencia de casos: ===
-1. Vehiculos
-2. Mecanicos
-3. Repuestos
-4. Ordenes de servicio
-5. Lista general de registros
-0. Salir
-Opcion: 
