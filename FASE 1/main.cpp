@@ -1076,10 +1076,12 @@ void mostrarRepuesto(Repuesto* repuesto) {
     cout << "Marca: " << repuesto->marca << endl;
     cout << "Precio $: " << repuesto->precio << endl;
     cout << "Stock disponible: " << repuesto->stock;
+
      if (repuesto->stock <= repuesto->stockMinimo) {
         cout << " [BAJO STOCK]";
     }
       cout << endl;
+      
     cout << "Stock minimo: " << repuesto->stockMinimo << endl;
     cout << "--------------------------------------------" << endl;
 }
