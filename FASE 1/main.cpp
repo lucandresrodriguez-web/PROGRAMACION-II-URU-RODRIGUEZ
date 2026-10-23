@@ -1081,7 +1081,7 @@ void mostrarRepuesto(Repuesto* repuesto) {
         cout << " [BAJO STOCK]";
     }
       cout << endl;
-      
+
     cout << "Stock minimo: " << repuesto->stockMinimo << endl;
     cout << "--------------------------------------------" << endl;
 }
@@ -1494,6 +1494,7 @@ void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
     cout << "----------------------------------------" << endl;
 }
 
+//SISTEMA DE LISTADO GENERAL
 void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad) {
     (void)s;
     if (ordenes == nullptr || cantidad == 0) {
@@ -1647,6 +1648,7 @@ void menuOrdenes(SistemaTaller* s) {
     }
 }
 
+//SISTEMA MAIN
 int main() {
     Taller taller = {};
     cout << "Nombre del taller: ";
