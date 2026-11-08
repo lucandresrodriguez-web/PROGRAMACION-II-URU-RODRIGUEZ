@@ -17,7 +17,8 @@ se documentaran los avances, progresos y entregas de cada uno de estos mismos du
 2. Operadores con punteros 
 3. Pasos por referencia 
 4. Memoria Dinamica
-5. Ficheros 
+5. Ficheros
+6. Clases y principios de POO
 
 ## Poyectos a realizar:
 
