@@ -343,48 +343,6 @@ struct SistemaTaller{
     int siguienteIdOrdenes;
 };
 
-Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
-Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
-Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
-void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
-void mostrarMecanicoUnico(Mecanico* m);
-void mostrarListaMecanico(SistemaTaller* s);
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
-Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
-Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
-void mostrarRepuesto(Repuesto* repuesto);
-void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
-Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
-Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
-int contarOrdenesAbiertasMecanico(SistemaTaller* s, int idMecanico);
-OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
-float calcularTotalOrden(const OrdenServicio* orden);
-void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
-void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
-
-bool fechaValida(const char* fecha);
-void obtenerFechaActual(char* fecha, size_t capacidad);
-bool cedulaValida(const char* cedula);
-bool confirmarAccion(const char* mensaje);
-bool esCancelar(const char* texto);
-bool contieneSinMayusculas(const char* texto, const char* fragmento);
-
-bool leerTexto(const char* mensaje, char* valor, size_t capacidad) {
-    return Validaciones::leerTexto(mensaje, valor, capacidad) == ResultadoEntrada::Correcto;
-}
-
-bool leerEnteroRango(const char* mensaje, int minimo, int maximo, int& valor) {
-    return Validaciones::leerEnteroRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
-}
-
-bool leerDecimalRango(const char* mensaje, double minimo, double maximo, double& valor) {
-    return Validaciones::leerDecimalRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
-}
-
-void mostrarOpcionVolver() {
-    cout << "Escriba CANCELAR para volver al menu o ATRAS para regresar al campo anterior." << endl;
-}
-
 //PERSISTENCIA ARCHIVOS BIN
 const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
 const char* ARCHIVO_MECANICOS = "mecanicos.bin";
@@ -441,6 +399,49 @@ void guardarDatos(SistemaTaller& s) {
         }
     }
 }
+
+Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
+Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
+Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
+void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
+void mostrarMecanicoUnico(Mecanico* m);
+void mostrarListaMecanico(SistemaTaller* s);
+Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
+Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
+Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
+void mostrarRepuesto(Repuesto* repuesto);
+void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
+Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
+Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
+int contarOrdenesAbiertasMecanico(SistemaTaller* s, int idMecanico);
+OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
+float calcularTotalOrden(const OrdenServicio* orden);
+void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
+void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
+
+bool fechaValida(const char* fecha);
+void obtenerFechaActual(char* fecha, size_t capacidad);
+bool cedulaValida(const char* cedula);
+bool confirmarAccion(const char* mensaje);
+bool esCancelar(const char* texto);
+bool contieneSinMayusculas(const char* texto, const char* fragmento);
+
+bool leerTexto(const char* mensaje, char* valor, size_t capacidad) {
+    return Validaciones::leerTexto(mensaje, valor, capacidad) == ResultadoEntrada::Correcto;
+}
+
+bool leerEnteroRango(const char* mensaje, int minimo, int maximo, int& valor) {
+    return Validaciones::leerEnteroRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
+}
+
+bool leerDecimalRango(const char* mensaje, double minimo, double maximo, double& valor) {
+    return Validaciones::leerDecimalRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
+}
+
+void mostrarOpcionVolver() {
+    cout << "Escriba CANCELAR para volver al menu o ATRAS para regresar al campo anterior." << endl;
+}
+
 
 //SISTEMA GENERAL 
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
