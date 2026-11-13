@@ -412,10 +412,6 @@ void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
 };
 
 void liberarSistema(SistemaTaller &s) {
-    for (int i = 0; i < s.numOrdenes; i++) {
-        delete[] s.ordenes[i].repuestosUsados;
-    }
-    
     delete[] s.vehiculos;
     delete[] s.repuestos;
     delete[] s.mecanicos;
@@ -1099,8 +1095,8 @@ bool eliminarRepuesto(SistemaTaller* s, int id) {
 
     if (pos == -1) return false;
     for (int i = 0; i < s->numOrdenes; ++i) {
-        for (int j = 0; j < s->ordenes[i].numRepuestosUsados; ++j) {
-            if (s->ordenes[i].repuestosUsados[j].idRepuesto == id) return false;
+        for (int j = 0; j < s->ordenes[i].cantidadLineasUsadas; ++j) {
+            if (s->ordenes[i].lineasDetalle[j].idRepuesto == id) return false;
         }
     }
 
@@ -1369,9 +1365,7 @@ OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, cons
     strcpy(nuevaO.fechaCierre, "Pendiente");
     strcpy(nuevaO.estado, "Abierta");
     nuevaO.manoObra = 0.0f;
-    nuevaO.repuestosUsados = new DetalleOrden[2];
-    nuevaO.numRepuestosUsados = 0;
-    nuevaO.capacidadRepuestosUsados = 2;
+    nuevaO.cantidadLineasUsadas = 0;
 
     s->ordenes[s->numOrdenes] = nuevaO;
     s->numOrdenes++;
@@ -1400,7 +1394,7 @@ bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int ca
 
     r->stock -= cantidad;
 
-    int idx = o->numRepuestosUsados;
+    int idx = o->cantidadLineasUsadas;
     o->lineasDetalle[idx].idRepuesto = r->id;
     strcpy(o->lineasDetalle[idx].codigoRepuesto, r->codigo);
     strcpy(o->lineasDetalle[idx].nombreRepuesto, r->nombre);
@@ -1417,8 +1411,8 @@ bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto) {
     if (o == nullptr || strcmp(o->estado, "Abierta") != 0) return false;
 
     int pos = -1;
-    for (int i = 0; i < o->numRepuestosUsados; i++) {
-        if (o->repuestosUsados[i].idRepuesto == idRepuesto) {
+    for (int i = 0; i < o->cantidadLineasUsadas; i++) {
+        if (o->lineasDetalle[i].idRepuesto == idRepuesto) {
             pos = i;
             break;
         }
@@ -1428,7 +1422,7 @@ bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto) {
 
     Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
     if (r != nullptr) {
-        r->stock += o->repuestosUsados[pos].cantidad;
+        r->stock += o->lineasDetalle[pos].cantidad;
     }
 
     for (int i = pos; i < o->cantidadLineasUsadas - 1; i++) {
@@ -1780,11 +1774,11 @@ void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
         cout << " [!] Mecanico con ID " << orden->idMecanico << " no encontrado." << endl;
     }
 
-    cout << " --- REPUESTOS UTILIZADOS (" << orden->numRepuestosUsados << ") ---" << endl;
-    for (int i = 0; i < orden->numRepuestosUsados; i++) {
-        cout << "  - " << orden->repuestosUsados[i].nombreRepuesto 
-             << " x" << orden->repuestosUsados[i].cantidad 
-             << " ($" << orden->repuestosUsados[i].precioUnitario << " c/u)" << endl;
+    cout << " --- REPUESTOS UTILIZADOS (" << orden-> cantidadLineasUsadas << ") ---" << endl;
+    for (int i = 0; i < orden->cantidadLineasUsadas; i++) {
+        cout << "  - " << orden->lineasDetalle[i].nombreRepuesto 
+             << " x" << orden->lineasDetalle[i].cantidad 
+             << " ($" << orden->lineasDetalle[i].precioUnitario << " c/u)" << endl;
     }
 
     float total = calcularTotalOrden(orden);
