@@ -242,7 +242,8 @@ struct ArchivoHeader {
     int proximoID;
     int registrosActivos;
     int version;
-}
+};
+
 struct Taller {
     char nombre[100]; 
     char rif[20];
@@ -318,9 +319,9 @@ struct OrdenServicio {
     char descripcionFalla[200];
     int kilometrajeIngreso;
     float manoObra;
-    DetalleOrden* repuestosUsados;
-    int           numRepuestosUsados;
-    int           capacidadRepuestosUsados;
+    
+    DetalleOrden lineasDetalle[15];
+    int cantidadLineasUsadas;
 
     bool eliminado;
     time_t fechaCreacion;
