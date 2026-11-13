@@ -342,6 +342,103 @@ struct SistemaTaller{
     int siguienteIdRepuestos;
     int siguienteIdOrdenes;
 };
+//PERSISTENCIA ARCHIVOS BIN
+const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
+const char* ARCHIVO_MECANICOS = "mecanicos.bin";
+const char* ARCHIVO_REPUESTOS = "repuestos.bin";
+const char* ARCHIVO_ORDENES = "ordenes.bin";
+const int VERSION_ARCHIVO =1;
+
+void guardarDatos(SistemaTaller& s) {
+    {
+        ofstream archivo(ARCHIVO_VEHICULOS, ios::out | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header = { s.numVehiculos, s.siguienteIdVehiculos, s.numVehiculos, VERSION_ARCHIVO };
+            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (s.numVehiculos > 0) {
+                archivo.write(reinterpret_cast<char*>(s.vehiculos), sizeof(Vehiculo) * s.numVehiculos);
+            }
+            archivo.close();
+        }
+    }
+
+    {
+        ofstream archivo(ARCHIVO_MECANICOS, ios::out | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header = { s.numMecanicos, s.siguienteIdMecanicos, s.numMecanicos, VERSION_ARCHIVO };
+            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (s.numMecanicos > 0) {
+                archivo.write(reinterpret_cast<char*>(s.mecanicos), sizeof(Mecanico) * s.numMecanicos);
+            }
+            archivo.close();
+        }
+    }
+
+    {
+        ofstream archivo(ARCHIVO_REPUESTOS, ios::out | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header = { s.numRepuestos, s.siguienteIdRepuestos, s.numRepuestos, VERSION_ARCHIVO };
+            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (s.numRepuestos > 0) {
+                archivo.write(reinterpret_cast<char*>(s.repuestos), sizeof(Repuesto) * s.numRepuestos);
+            }
+            archivo.close();
+        }
+    }
+
+    {
+        ofstream archivo(ARCHIVO_ORDENES, ios::out | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header = { s.numOrdenes, s.siguienteIdOrdenes, s.numOrdenes, VERSION_ARCHIVO };
+            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (s.numOrdenes > 0) {
+                archivo.write(reinterpret_cast<char*>(s.ordenes), sizeof(OrdenServicio) * s.numOrdenes);
+            }
+            archivo.close();
+        }
+    }
+}
+Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
+Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
+Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
+void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
+void mostrarMecanicoUnico(Mecanico* m);
+void mostrarListaMecanico(SistemaTaller* s);
+Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
+Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
+Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
+void mostrarRepuesto(Repuesto* repuesto);
+void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
+Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
+Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
+int contarOrdenesAbiertasMecanico(SistemaTaller* s, int idMecanico);
+OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
+float calcularTotalOrden(const OrdenServicio* orden);
+void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
+void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
+
+bool fechaValida(const char* fecha);
+void obtenerFechaActual(char* fecha, size_t capacidad);
+bool cedulaValida(const char* cedula);
+bool confirmarAccion(const char* mensaje);
+bool esCancelar(const char* texto);
+bool contieneSinMayusculas(const char* texto, const char* fragmento);
+
+bool leerTexto(const char* mensaje, char* valor, size_t capacidad) {
+    return Validaciones::leerTexto(mensaje, valor, capacidad) == ResultadoEntrada::Correcto;
+}
+
+bool leerEnteroRango(const char* mensaje, int minimo, int maximo, int& valor) {
+    return Validaciones::leerEnteroRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
+}
+
+bool leerDecimalRango(const char* mensaje, double minimo, double maximo, double& valor) {
+    return Validaciones::leerDecimalRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
+}
+
+void mostrarOpcionVolver() {
+    cout << "Escriba CANCELAR para volver al menu o ATRAS para regresar al campo anterior." << endl;
+}
 
 //PERSISTENCIA ARCHIVOS BIN
 const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
@@ -399,49 +496,6 @@ void guardarDatos(SistemaTaller& s) {
         }
     }
 }
-
-Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
-Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
-Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
-void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
-void mostrarMecanicoUnico(Mecanico* m);
-void mostrarListaMecanico(SistemaTaller* s);
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
-Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
-Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
-void mostrarRepuesto(Repuesto* repuesto);
-void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
-Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
-Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
-int contarOrdenesAbiertasMecanico(SistemaTaller* s, int idMecanico);
-OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
-float calcularTotalOrden(const OrdenServicio* orden);
-void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
-void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
-
-bool fechaValida(const char* fecha);
-void obtenerFechaActual(char* fecha, size_t capacidad);
-bool cedulaValida(const char* cedula);
-bool confirmarAccion(const char* mensaje);
-bool esCancelar(const char* texto);
-bool contieneSinMayusculas(const char* texto, const char* fragmento);
-
-bool leerTexto(const char* mensaje, char* valor, size_t capacidad) {
-    return Validaciones::leerTexto(mensaje, valor, capacidad) == ResultadoEntrada::Correcto;
-}
-
-bool leerEnteroRango(const char* mensaje, int minimo, int maximo, int& valor) {
-    return Validaciones::leerEnteroRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
-}
-
-bool leerDecimalRango(const char* mensaje, double minimo, double maximo, double& valor) {
-    return Validaciones::leerDecimalRango(mensaje, minimo, maximo, valor) == ResultadoEntrada::Correcto;
-}
-
-void mostrarOpcionVolver() {
-    cout << "Escriba CANCELAR para volver al menu o ATRAS para regresar al campo anterior." << endl;
-}
-
 
 //SISTEMA GENERAL 
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
