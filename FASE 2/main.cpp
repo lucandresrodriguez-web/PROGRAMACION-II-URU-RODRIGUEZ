@@ -42,7 +42,6 @@ public:
                 cin.clear();
                 cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 entradaConSaltoPendiente = false;
-                entradaConSaltoPendiente = false;
                 cout << "[!] El texto excede el limite permitido." << endl;
                 continue;
             }
@@ -253,7 +252,6 @@ struct Taller {
     time_t fechaUltimaModificacion;
 };
 
-//Estructura Vehiculo
 struct Vehiculo {
     int id;
     char placa[10] = {};
@@ -271,7 +269,6 @@ struct Vehiculo {
     time_t fechaUltimaModificacion;
 };
 
-//Estructura Mecanico
 struct Mecanico {
     int id;
     char nombre[100];
@@ -284,7 +281,6 @@ struct Mecanico {
     time_t fechaUltimaModificacion;
 };
 
-//Estructura Repuesto
 struct Repuesto {
     int id;
     char codigo[20];
@@ -300,7 +296,6 @@ struct Repuesto {
     time_t fechaUltimaModificacion;
 };
 
-//Estructuras DetalleOrden y OrdenServicio
 struct DetalleOrden {
     int idRepuesto;
     char codigoRepuesto[20];
@@ -328,8 +323,7 @@ struct OrdenServicio {
     time_t fechaUltimaModificacion;
 };
 
-//Estructura Principal: SistemaTaller
-struct SistemaTaller{
+struct SistemaTaller {
     Taller taller;
 
     Vehiculo*      vehiculos; int numVehiculos; int capacidadVehiculos;
@@ -343,12 +337,12 @@ struct SistemaTaller{
     int siguienteIdOrdenes;
 };
 
-//PERSISTENCIA ARCHIVOS BIN
+// PERSISTENCIA ARCHIVOS BIN 
 const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
 const char* ARCHIVO_MECANICOS = "mecanicos.bin";
 const char* ARCHIVO_REPUESTOS = "repuestos.bin";
 const char* ARCHIVO_ORDENES   = "ordenes.bin";
-const int VERSION_ARCHIVO     = 1;
+const int   VERSION_ARCHIVO   = 1;
 
 void guardarDatos(SistemaTaller& s) {
     {
@@ -486,6 +480,7 @@ void cargarDatos(SistemaTaller& s) {
     }
 }
 
+// Prototipos de funciones
 Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
 Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
 Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
@@ -528,66 +523,8 @@ void mostrarOpcionVolver() {
     cout << "Escriba CANCELAR para volver al menu o ATRAS para regresar al campo anterior." << endl;
 }
 
-//PERSISTENCIA ARCHIVOS BIN
-const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
-const char* ARCHIVO_MECANICOS = "mecanicos.bin";
-const char* ARCHIVO_REPUESTOS = "repuestos.bin";
-const char* ARCHIVO_ORDENES = "ordenes.bin";
-const int VERSION_ARCHIVO =1;
-
-void guardarDatos(SistemaTaller& s) {
-    {
-        ofstream archivo(ARCHIVO_VEHICULOS, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header = { s.numVehiculos, s.siguienteIdVehiculos, s.numVehiculos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numVehiculos > 0) {
-                archivo.write(reinterpret_cast<char*>(s.vehiculos), sizeof(Vehiculo) * s.numVehiculos);
-            }
-            archivo.close();
-        }
-    }
-
-    {
-        ofstream archivo(ARCHIVO_MECANICOS, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header = { s.numMecanicos, s.siguienteIdMecanicos, s.numMecanicos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numMecanicos > 0) {
-                archivo.write(reinterpret_cast<char*>(s.mecanicos), sizeof(Mecanico) * s.numMecanicos);
-            }
-            archivo.close();
-        }
-    }
-
-    {
-        ofstream archivo(ARCHIVO_REPUESTOS, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header = { s.numRepuestos, s.siguienteIdRepuestos, s.numRepuestos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numRepuestos > 0) {
-                archivo.write(reinterpret_cast<char*>(s.repuestos), sizeof(Repuesto) * s.numRepuestos);
-            }
-            archivo.close();
-        }
-    }
-
-    {
-        ofstream archivo(ARCHIVO_ORDENES, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header = { s.numOrdenes, s.siguienteIdOrdenes, s.numOrdenes, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numOrdenes > 0) {
-                archivo.write(reinterpret_cast<char*>(s.ordenes), sizeof(OrdenServicio) * s.numOrdenes);
-            }
-            archivo.close();
-        }
-    }
-}
-
 //SISTEMA GENERAL 
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
-
     s.taller = infoTaller;
 
     s.capacidadVehiculos = 4;
@@ -609,14 +546,14 @@ void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
     s.siguienteIdOrdenes = 1;
     s.siguienteIdRepuestos = 1;
     s.siguienteIdVehiculos = 1;
-};
+}
 
 void liberarSistema(SistemaTaller &s) {
     delete[] s.vehiculos;
     delete[] s.repuestos;
     delete[] s.mecanicos;
     delete[] s.ordenes; 
-};
+}
 
 bool cedulaValida(const char* cedula) {
     return Validaciones::cedulaValida(cedula);
@@ -694,7 +631,7 @@ void redimensionarVehiculos(SistemaTaller* s) {
 
     delete[] s->vehiculos;
     s->vehiculos = nuevosVehiculos;
-};
+}
 
 bool datosVehiculoValidos(SistemaTaller* s, const Vehiculo& datos, int idIgnorado) {
     if (!cadenaTerminada(datos.placa, sizeof(datos.placa)) ||
@@ -803,7 +740,7 @@ Vehiculo* agregarVehiculo(SistemaTaller* s, Vehiculo datos) {
     s->numVehiculos++;
 
     return &(s->vehiculos[s->numVehiculos - 1]);
-};
+}
 
 Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id) {
     for (int i = 0; i < s->numVehiculos; i++) {
@@ -812,7 +749,7 @@ Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id) {
         }
     }
     return nullptr;
-};
+}
 
 Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa){
     for (int i = 0; i < s->numVehiculos; i++) {
@@ -821,7 +758,7 @@ Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa){
         }
     }
     return nullptr;
-};
+}
 
 Vehiculo** buscarVehiculosPorPropietario(SistemaTaller* s, const char* subcadena, int* cantidad) {
     int encontrados = 0;
@@ -852,7 +789,7 @@ Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad) {
         lista[i] = &(s->vehiculos[i]);
     }
     return lista;
-};
+}
 
 bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos) {
     Vehiculo* v = buscarVehiculoPorID(s, id);
@@ -872,7 +809,7 @@ bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos) {
         v->cedulaPropietario[0] = static_cast<char>(toupper(static_cast<unsigned char>(v->cedulaPropietario[0])));
     strcpy(v->telefonoPropietario, datos.telefonoPropietario);
     return true;
-};
+}
 
 bool eliminarVehiculo(SistemaTaller* s, int id) {
     int pos = -1;
@@ -894,7 +831,7 @@ bool eliminarVehiculo(SistemaTaller* s, int id) {
     
     s->numVehiculos--;
     return true;
-};
+}
 
 void mostrarVehiculo(Vehiculo* vehiculo) {
     if (vehiculo == nullptr) {
@@ -929,7 +866,7 @@ void menuRegistrarVehiculo(SistemaTaller* s) {
         return;
     }
     cout << "[OK] Vehiculo registrado con ID " << creado->id << "." << endl;
-};
+}
 
 void menuBuscarVehiculo(SistemaTaller* s) {
     limpiarTerminal();
@@ -969,7 +906,7 @@ void menuBuscarVehiculo(SistemaTaller* s) {
         }
         if (!Validaciones::procesarResultado(resultado, campo)) return;
     }
-};
+}
 
 void menuActualizarVehiculo(SistemaTaller* s) {
     limpiarTerminal();
@@ -995,7 +932,7 @@ void menuActualizarVehiculo(SistemaTaller* s) {
     } else {
         cout << "[!] Error al actualizar." << endl;
     }
-};
+}
 
 void menuEliminarVehiculo(SistemaTaller* s) {
     limpiarTerminal();
@@ -1008,7 +945,7 @@ void menuEliminarVehiculo(SistemaTaller* s) {
     if (!confirmarAccion("Eliminar vehiculo")) return;
     cout << (eliminarVehiculo(s, id) ? "[OK] Vehiculo eliminado." :
              "[!] No existe o tiene ordenes asociadas.") << endl;
-};
+}
 
 void menuListarVehiculos(SistemaTaller* s) {
     limpiarTerminal();
@@ -1068,7 +1005,7 @@ Mecanico* agregarMecanico(SistemaTaller* s, Mecanico datos) {
     s->numMecanicos++;
 
     return &(s->mecanicos[s->numMecanicos - 1]);
-};
+}
 
 Mecanico* buscarMecanicoporID(SistemaTaller* s, int id) {
     for (int i = 0; i < s->numMecanicos; i++) {
@@ -1077,7 +1014,7 @@ Mecanico* buscarMecanicoporID(SistemaTaller* s, int id) {
         }
     }
     return nullptr;
-};
+}
 
 Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula) {
     for (int i = 0; i < s->numMecanicos; i++) {
@@ -1086,13 +1023,13 @@ Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula) {
         }
     }
     return nullptr;
-};
+}
 
 Mecanico* listarMecanico(SistemaTaller* s, int* cantidad) {
     *cantidad = s->numMecanicos;
     if (s->numMecanicos == 0) return nullptr;
     return s->mecanicos;
-};
+}
 
 int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico) {
     int cont = 0;
@@ -1104,7 +1041,7 @@ int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico) {
         }
     }
     return cont;
-};
+}
 
 bool capturarDatosMecanico(SistemaTaller* s, Mecanico& datos) {
     const char* especialidades[] = {"MOTOR", "FRENOS", "ELECTRICIDAD", "SUSPENSION", "GENERAL"};
@@ -1162,13 +1099,13 @@ void menuRegistrarMecanico(SistemaTaller* s) {
         return;
     }
     cout << "\n[OK] Mecanico registrado exitosamente." << endl;
-};
+}
 
 void menuListarMecanico(SistemaTaller* s) {
     limpiarTerminal();
     mostrarListaMecanico(s);
     pausarParaContinuar();
-};
+}
 
 void mostrarMecanicoUnico(Mecanico *m) {
     if (m == nullptr) {
@@ -1182,7 +1119,7 @@ void mostrarMecanicoUnico(Mecanico *m) {
     cout << "Especialidad: " << m->especialidad << endl;
     cout << "Fecha Ingreso: " << m->fechaIngreso << endl;
     cout << "--------------------------------------------" << endl;
-};
+}
 
 void mostrarMecanico(SistemaTaller* s) {
     int id = 0;
@@ -1190,7 +1127,7 @@ void mostrarMecanico(SistemaTaller* s) {
                          numeric_limits<int>::min(), numeric_limits<int>::max(), id)) return;
     Mecanico* m = buscarMecanicoporID(s, id);
     mostrarMecanicoUnico(m);
-};
+}
 
 void mostrarListaMecanico(SistemaTaller* s) {
     int cantidad = 0;
@@ -1206,7 +1143,7 @@ void mostrarListaMecanico(SistemaTaller* s) {
         mostrarMecanicoUnico(&lista[i]);
         cout << "Ordenes abiertas: " << contarOrdenesAbiertasMecanico(s, lista[i].id) << endl;
     }
-};
+}
 
 //SISTEMA DE REPUESTOS
 void redimensionarRepuestos(SistemaTaller* s) {
@@ -1219,7 +1156,7 @@ void redimensionarRepuestos(SistemaTaller* s) {
 
     delete[] s->repuestos;
     s->repuestos = nuevosRepuestos;
-};
+}
 
 Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos) {
     Validaciones::convertirAMayusculas(datos.codigo);
@@ -1235,7 +1172,7 @@ Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos) {
     s->numRepuestos++;
 
     return &(s->repuestos[s->numRepuestos - 1]);
-};
+}
 
 Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id) {
     for (int i = 0; i < s->numRepuestos; i++) {
@@ -1244,7 +1181,7 @@ Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id) {
         }
     }
     return nullptr;
-};
+}
 
 Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo) {
     for (int i = 0; i < s->numRepuestos; i++) {
@@ -1253,7 +1190,7 @@ Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo) {
         }
     }
     return nullptr;
-};
+}
 
 Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena) {
     for (int i = 0; i < s->numRepuestos; i++) {
@@ -1262,27 +1199,27 @@ Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena
         }
     }
     return nullptr;
-};
+}
 
 Repuesto* listarRepuesto(SistemaTaller* s, int* cantidad) {
      *cantidad = s->numRepuestos;
     if (s->numRepuestos == 0) return nullptr;
     return s->repuestos;
-};
+}
 
 bool menuRegistrarEntradaMercancia(SistemaTaller* s, int idRepuesto, int CantidadAdicional) {
     Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
     if (r == nullptr || CantidadAdicional <= 0 || r->stock > numeric_limits<int>::max() - CantidadAdicional) return false;
     r->stock += CantidadAdicional;
     return true;
-};
+}
 
 bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio) {
     Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
     if (r == nullptr || nuevoPrecio <= 0.0f) return false;
     r->precio = nuevoPrecio;
     return true;
-};
+}
 
 bool eliminarRepuesto(SistemaTaller* s, int id) {
     int pos = -1;
@@ -1306,7 +1243,7 @@ bool eliminarRepuesto(SistemaTaller* s, int id) {
     
     s->numRepuestos--;
     return true;
-};
+}
 
 bool capturarDatosRepuesto(SistemaTaller* s, Repuesto& datos) {
     int campo = 0;
