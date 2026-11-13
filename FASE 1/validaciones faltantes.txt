@@ -1,0 +1,49 @@
+
+GENERAL
+
+a la hora de agregar un vehiculo, mecanicos, repuestos y ordenes deberiamos hacer que solo aparezca la opcion de crear, nada de listar eliminar etc
+porque se supone que no tenemos nada creado y aja no tiene sentido que aparezcan esas opciones. una vez ya creado algun objeto ahi si deberia aparecer
+esas opciones
+
+los IDs no se muestran a la hora de crear los vehiculos
+
+no se pueden salir de los menus que estan dentro de los menus
+
+los IDs estan raros y no se como explicar por texto :)
+
+podriamos anadir una forma en la que el cliente pueda regresarse a un parametro anterior por si lo quiere modificar para que no tenga que hacer todo
+desde 0
+
+podemos poner una validacion para los menus para que se usen los numeros de los menus existentes y que devuelva al menu donde se estaba y no al menu principal
+
+PARTE VEHICULOS
+
+no hay validaciones para actualizar vehiculo
+no hay forma de salir en los menus buscar vehiculos, actualizar ni eliminar
+
+PARTE mecanicos
+
+el registrar esta mal hecho, la especialidades tienen que escribirse en mayusculas a juro para que funcionen, pienso que podriamos eliminar laopcion
+buscar porque ya existe listar y esta algo rebundante, o quitamos la opcion listar, pienso yo
+
+a la hora de crear a un mecanico la validacion esta al final, podriamos ponerla en cada apartado osea cedula nombre completo y especialidad para que
+sea mas comodo ese paso 
+
+PARTE repuestos
+
+validaciones en los menus
+
+PARTE ordenes
+
+esta opcion deberia aparecer despues de crear a un mecanico y al ya haber repuestos
+
+agregar repuesto a orden no tiene forma de salir
+
+quitar repuesto tampoco tiene forma de salir
+
+cerrar orden tampoco tiene forma de salir
+
+anular orden tampoco tiene forma de salir
+
+
+
