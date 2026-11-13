@@ -302,6 +302,7 @@ struct Repuesto {
 //Estructuras DetalleOrden y OrdenServicio
 struct DetalleOrden {
     int idRepuesto;
+    char codigoRepuesto[20];
     char nombreRepuesto[100];
     int cantidad;
     float precioUnitario;
