@@ -1359,7 +1359,7 @@ OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, cons
         redimensionarOrdenes(s);
     }
 
-    OrdenServicio nuevaO;
+    OrdenServicio nuevaO ={};
     nuevaO.id = s->siguienteIdOrdenes++;
     nuevaO.idVehiculo = idVehiculo;
     nuevaO.idMecanico = idMecanico;
@@ -1387,34 +1387,26 @@ bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int ca
     Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
     if (r == nullptr || r->stock < cantidad) return false;
 
-    for (int i = 0; i < o->numRepuestosUsados; ++i) {
-        if (o->repuestosUsados[i].idRepuesto == idRepuesto) {
-            if (o->repuestosUsados[i].cantidad > numeric_limits<int>::max() - cantidad) return false;
-            o->repuestosUsados[i].cantidad += cantidad;
+    for (int i = 0; i < o->cantidadLineasUsadas; ++i) {
+        if (o->lineasDetalle[i].idRepuesto == idRepuesto) {
+            if (o->lineasDetalle[i].cantidad > numeric_limits<int>::max() - cantidad) return false;
+            o->lineasDetalle[i].cantidad += cantidad;
             r->stock -= cantidad;
             return true;
         }
     }
 
-    if (o->numRepuestosUsados >= o->capacidadRepuestosUsados) {
-        int nuevaCapacidad = o->capacidadRepuestosUsados * 2;
-        DetalleOrden* nuevosRepuestos = new DetalleOrden[nuevaCapacidad];
-        for (int i = 0; i < o->numRepuestosUsados; i++) {
-            nuevosRepuestos[i] = o->repuestosUsados[i];
-        }
-        delete[] o->repuestosUsados;
-        o->repuestosUsados = nuevosRepuestos;
-        o->capacidadRepuestosUsados = nuevaCapacidad;
-    }
+    if (o->cantidadLineasUsadas >= 15) return false;
 
     r->stock -= cantidad;
 
     int idx = o->numRepuestosUsados;
-    o->repuestosUsados[idx].idRepuesto = r->id;
-    strcpy(o->repuestosUsados[idx].nombreRepuesto, r->nombre);
-    o->repuestosUsados[idx].precioUnitario = r->precio;
-    o->repuestosUsados[idx].cantidad = cantidad;
-    o->numRepuestosUsados++;
+    o->lineasDetalle[idx].idRepuesto = r->id;
+    strcpy(o->lineasDetalle[idx].codigoRepuesto, r->codigo);
+    strcpy(o->lineasDetalle[idx].nombreRepuesto, r->nombre);
+    o->lineasDetalle[idx].precioUnitario = r->precio;
+    o->lineasDetalle[idx].cantidad = cantidad;
+    o->cantidadLineasUsadas++;
 
     calcularTotalOrden(o);
     return true;
@@ -1439,10 +1431,10 @@ bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto) {
         r->stock += o->repuestosUsados[pos].cantidad;
     }
 
-    for (int i = pos; i < o->numRepuestosUsados - 1; i++) {
-        o->repuestosUsados[i] = o->repuestosUsados[i + 1];
+    for (int i = pos; i < o->cantidadLineasUsadas - 1; i++) {
+        o->lineasDetalle[i] = o->lineasDetalle[i + 1];
     }
-    o->numRepuestosUsados--;
+    o->cantidadLineasUsadas--;
 
     calcularTotalOrden(o);
     return true;
@@ -1452,7 +1444,7 @@ bool cerrarOrden(SistemaTaller* s, int idOrden, float manoObra, const char* fech
     OrdenServicio* o = buscarOrdenPorID(s, idOrden);
     if (o == nullptr || strcmp(o->estado, "Abierta") != 0 || manoObra < 0.0f ||
         fechaActual == nullptr || !fechaValida(fechaActual) ||
-        (manoObra == 0.0f && o->numRepuestosUsados == 0)) return false;
+        (manoObra == 0.0f && o->cantidadLineasUsadas == 0)) return false;
 
     o->manoObra = manoObra;
     strcpy(o->fechaCierre, fechaActual);
@@ -1465,10 +1457,10 @@ bool anularOrden(SistemaTaller* s, int idOrden) {
     OrdenServicio* o = buscarOrdenPorID(s, idOrden);
     if (o == nullptr || strcmp(o->estado, "Abierta") != 0) return false;
 
-    for (int i = 0; i < o->numRepuestosUsados; i++) {
-        Repuesto* r = buscarRepuestoPorID(s, o->repuestosUsados[i].idRepuesto);
+    for (int i = 0; i < o->cantidadLineasUsadas; i++) {
+        Repuesto* r = buscarRepuestoPorID(s, o->lineasDetalle[i].idRepuesto);
         if (r != nullptr) {
-            r->stock += o->repuestosUsados[i].cantidad;
+            r->stock += o->lineasDetalle[i].cantidad;
         }
     }
 
@@ -1480,8 +1472,8 @@ float calcularTotalOrden(const OrdenServicio* orden) {
     if (orden == nullptr) return 0.0f;
 
     float costoRepuestos = 0.0f;
-    for (int i = 0; i < orden->numRepuestosUsados; i++) {
-        costoRepuestos += (orden->repuestosUsados[i].precioUnitario * orden->repuestosUsados[i].cantidad);
+    for (int i = 0; i < orden->cantidadLineasUsadas; i++) {
+        costoRepuestos += (orden->lineasDetalle[i].precioUnitario * orden->lineasDetalle[i].cantidad);
     }
 
     return orden->manoObra + costoRepuestos;
