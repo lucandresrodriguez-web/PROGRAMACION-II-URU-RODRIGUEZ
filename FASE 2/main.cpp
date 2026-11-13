@@ -2083,7 +2083,9 @@ int main() {
 
     SistemaTaller sistema = {};
     inicializarSistema(sistema, taller);
+    
     cargarDatos(sistema);
+
     int opcion = -1;
     bool salir = false;
     while (!salir) {
@@ -2115,11 +2117,12 @@ int main() {
                 }
                 break;
             case 5: menuListaGeneral(&sistema); break;
-            case 0: salir = confirmarAccion("Salir del sistema"); break;
-            if (salir) {
-                guardarDatos(sistema);
-            }
-            break;
+            case 0: 
+                salir = confirmarAccion("Salir del sistema"); 
+                if (salir) {
+                    guardarDatos(sistema);
+                }
+                break;
             default: cout << "[!] Opcion invalida." << endl;
         }
     }
