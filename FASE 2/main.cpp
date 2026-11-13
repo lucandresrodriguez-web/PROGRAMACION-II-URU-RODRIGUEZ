@@ -394,7 +394,7 @@ const int VERSION_ARCHIVO =1;
 
 void guardarDatos(SistemaTaller& s) {
     {
-        ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
+        ofstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
         if (archivo.is_open()) {
             ArchivoHeader header;
             archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
@@ -415,7 +415,7 @@ void guardarDatos(SistemaTaller& s) {
     }
 
     {
-        ifstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
+        ofstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
         if (archivo.is_open()) {
             ArchivoHeader header;
             archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
@@ -436,7 +436,7 @@ void guardarDatos(SistemaTaller& s) {
     }
 
     {
-        ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+        ofstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
         if (archivo.is_open()) {
             ArchivoHeader header;
             archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
@@ -457,7 +457,7 @@ void guardarDatos(SistemaTaller& s) {
     }
 
     {
-        ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
+        ofstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
         if (archivo.is_open()) {
             ArchivoHeader header;
             archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
