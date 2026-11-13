@@ -385,6 +385,99 @@ void mostrarOpcionVolver() {
     cout << "Escriba CANCELAR para volver al menu o ATRAS para regresar al campo anterior." << endl;
 }
 
+//PERSISTENCIA ARCHIVOS BIN
+const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
+const char* ARCHIVO_MECANICOS = "mecanicos.bin";
+const char* ARCHIVO_REPUESTOS = "repuestos.bin";
+const char* ARCHIVO_ORDENES = "ordenes.bin";
+const int VERSION_ARCHIVO =1;
+
+void cargarDatos(SistemaTaller& s) {
+    {
+        ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header;
+            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (!archivo.fail()) {
+                s.siguienteIdVehiculos = header.proximoID;
+                if (header.cantidadRegistros > 0) {
+                    if (header.cantidadRegistros > s.capacidadVehiculos) {
+                        delete[] s.vehiculos;
+                        s.capacidadVehiculos = header.cantidadRegistros * 2;
+                        s.vehiculos = new Vehiculo[s.capacidadVehiculos];
+                    }
+                    archivo.read(reinterpret_cast<char*>(s.vehiculos), sizeof(Vehiculo) * header.cantidadRegistros);
+                    s.numVehiculos = header.cantidadRegistros;
+                }
+            }
+            archivo.close();
+        }
+    }
+
+    {
+        ifstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header;
+            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (!archivo.fail()) {
+                s.siguienteIdMecanicos = header.proximoID;
+                if (header.cantidadRegistros > 0) {
+                    if (header.cantidadRegistros > s.capacidadMecanicos) {
+                        delete[] s.mecanicos;
+                        s.capacidadMecanicos = header.cantidadRegistros * 2;
+                        s.mecanicos = new Mecanico[s.capacidadMecanicos];
+                    }
+                    archivo.read(reinterpret_cast<char*>(s.mecanicos), sizeof(Mecanico) * header.cantidadRegistros);
+                    s.numMecanicos = header.cantidadRegistros;
+                }
+            }
+            archivo.close();
+        }
+    }
+
+    {
+        ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header;
+            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (!archivo.fail()) {
+                s.siguienteIdRepuestos = header.proximoID;
+                if (header.cantidadRegistros > 0) {
+                    if (header.cantidadRegistros > s.capacidadRepuestos) {
+                        delete[] s.repuestos;
+                        s.capacidadRepuestos = header.cantidadRegistros * 2;
+                        s.repuestos = new Repuesto[s.capacidadRepuestos];
+                    }
+                    archivo.read(reinterpret_cast<char*>(s.repuestos), sizeof(Repuesto) * header.cantidadRegistros);
+                    s.numRepuestos = header.cantidadRegistros;
+                }
+            }
+            archivo.close();
+        }
+    }
+
+    {
+        ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
+        if (archivo.is_open()) {
+            ArchivoHeader header;
+            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+            if (!archivo.fail()) {
+                s.siguienteIdOrdenes = header.proximoID;
+                if (header.cantidadRegistros > 0) {
+                    if (header.cantidadRegistros > s.capacidadOrdenes) {
+                        delete[] s.ordenes;
+                        s.capacidadOrdenes = header.cantidadRegistros * 2;
+                        s.ordenes = new OrdenServicio[s.capacidadOrdenes];
+                    }
+                    archivo.read(reinterpret_cast<char*>(s.ordenes), sizeof(OrdenServicio) * header.cantidadRegistros);
+                    s.numOrdenes = header.cantidadRegistros;
+                }
+            }
+            archivo.close();
+        }
+    }
+}
+
 //SISTEMA GENERAL 
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
 
@@ -1990,6 +2083,7 @@ int main() {
 
     SistemaTaller sistema = {};
     inicializarSistema(sistema, taller);
+    cargarDatos(sistema);
     int opcion = -1;
     bool salir = false;
     while (!salir) {
@@ -2022,6 +2116,10 @@ int main() {
                 break;
             case 5: menuListaGeneral(&sistema); break;
             case 0: salir = confirmarAccion("Salir del sistema"); break;
+            if (salir) {
+                guardarDatos(sistema);
+            }
+            break;
             default: cout << "[!] Opcion invalida." << endl;
         }
     }
