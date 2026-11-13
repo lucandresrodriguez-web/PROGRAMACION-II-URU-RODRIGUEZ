@@ -392,7 +392,7 @@ const char* ARCHIVO_REPUESTOS = "repuestos.bin";
 const char* ARCHIVO_ORDENES = "ordenes.bin";
 const int VERSION_ARCHIVO =1;
 
-void cargarDatos(SistemaTaller& s) {
+void guardarDatos(SistemaTaller& s) {
     {
         ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
         if (archivo.is_open()) {
