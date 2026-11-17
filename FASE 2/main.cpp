@@ -1644,7 +1644,7 @@ void menuEliminarMecanico(SistemaTaller* s) {
 }
 
 void mostrarListaMecanico(SistemaTaller* s) {
-    int cantidad = 0;
+    int activos = 0;
     for (int i = 0; i < s->numMecanicos; i++) {
         if (!s->mecanicos[i].eliminado) activos++;
     }
@@ -2588,7 +2588,7 @@ void menuMecanicos(SistemaTaller* s) {
         }
 
         cout << "\n--- MECANICOS ---\n1. Registrar\n";
-        if (s->numMecanicos > 0) {
+        if (mecanicosActivos > 0) {
             cout << "2. Listar\n3. Eliminar\n";
         }
         cout << "0. Volver\nOpcion: ";
@@ -2623,8 +2623,9 @@ void menuRepuestos(SistemaTaller* s) {
         for (int i = 0; i < s->numRepuestos; i++) {
             if (!s->repuestos[i].eliminado) repuestosActivos++;
         }
+
         cout << "\n--- REPUESTOS ---\n1. Registrar\n";
-        if (s->numRepuestos > 0) {
+        if (repuestosActivos > 0) {
             cout << "2. Buscar\n3. Entrada de mercancia\n4. Cambiar precio\n"
                  << "5. Eliminar\n6. Listar\n";
         }
@@ -2638,7 +2639,7 @@ void menuRepuestos(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (s->numRepuestos == 0 && opcion != 0 && opcion != 1) {
+        if (repuestosActivos == 0 && opcion != 0 && opcion != 1) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
@@ -2933,9 +2934,14 @@ int main() {
     bool salir = false;
     while (!salir) {
         limpiarTerminal();
+
+        int vehiculosActivos = 0; for(int i=0; i<sistema.numVehiculos; ++i) if(!sistema.vehiculos[i].eliminado) vehiculosActivos++;
+        int mecanicosActivos = 0; for(int i=0; i<sistema.numMecanicos; ++i) if(!sistema.mecanicos[i].eliminado) mecanicosActivos++;
+        int repuestosActivos = 0; for(int i=0; i<sistema.numRepuestos; ++i) if(!sistema.repuestos[i].eliminado) repuestosActivos++;
+
         cout << "\n=== " << sistema.taller.nombre << " ===\n"
              << "1. Vehiculos\n2. Mecanicos\n3. Repuestos\n";
-        if (sistema.numVehiculos > 0 && sistema.numMecanicos > 0 && sistema.numRepuestos > 0) {
+        if (vehiculosActivos > 0 && mecanicosActivos > 0 && repuestosActivos > 0) {
             cout << "4. Ordenes de servicio\n";
         }
         cout << "5. Lista general de registros\n6. Mantenimeinto\n0. Salir\nOpcion: ";
@@ -2953,10 +2959,11 @@ int main() {
             case 2: menuMecanicos(&sistema); break;
             case 3: menuRepuestos(&sistema); break;
             case 4:
-                if (sistema.numVehiculos > 0 && sistema.numMecanicos > 0 && sistema.numRepuestos > 0) {
+                if (vehiculosActivos > 0 && mecanicosActivos > 0 && repuestosActivos > 0) {
                     menuOrdenes(&sistema);
                 } else {
                     cout << "[!] Registre al menos un vehiculo, un mecanico y un repuesto antes de gestionar ordenes." << endl;
+                    pausarParaContinuar();
                 }
                 break;
             case 5: menuListaGeneral(&sistema); break;
