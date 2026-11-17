@@ -2913,6 +2913,221 @@ void menuMantenimiento(SistemaTaller* s) {
     }
 }
 
+//MODULO DE REPORTES
+void reporteHistorialVehiculo(SistemaTaller* s) {
+    limpiarTerminal();
+    char placa[10] = {};
+    cout << "\n==== REPORTE 1: HISTORIAL DE VEHICULO ====" << endl;
+    mostrarOpcionVolver();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    if (Validaciones::leerTexto("Ingrese la placa del vehiculo: ", placa, sizeof(placa)) != ResultadoEntrada::Correcto) return;
+    Validaciones::convertirAMayusculas(placa);
+
+    Vehiculo* v = buscarVehiculoPorPlaca(s, placa);
+    if (v == nullptr) {
+        cout << "[!] No se encontro un vehiculo activo con esa placa." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
+    mostrarVehiculo(v);
+    cout << "\n--- ORDENES ASOCIADAS AL VEHICULO ---" << endl;
+
+    float totalFacturadoCerradas = 0.0f;
+    int contarOrdenes = 0;
+
+    for (int i = 0; i < s->numOrdenes; i++) {
+        if (!s->ordenes[i].eliminado && s->ordenes[i].idVehiculo == v->id) {
+            contarOrdenes++;
+            Mecanico* m = buscarMecanicoporID(s, s->ordenes[i].idMecanico);
+            float totalOrden = 0.0f;
+            calcularTotalOrden(&s->ordenes[i], totalOrden);
+
+            cout << "Orden #" << s->ordenes[i].id
+                 << " | Fecha: " << s->ordenes[i].fechaApertura
+                 << " | Estado: " << s->ordenes[i].estado
+                 << " | Mecanico: " << (m != nullptr ? m->nombre : "[Desconocido]")
+                 << " | Total: $" << totalOrden << endl;
+                 
+            if (igualSinMayusculas(s->ordenes[i].estado, "Cerrada")) {
+                totalFacturadoCerradas += totalOrden;
+            }
+        }
+    }
+
+    if (contarOrdenes == 0) {
+        cout << "[!] Este vehiculo no registra ordenes de servicio." << endl;
+    } else {
+        cout << "--------------------------------------------------" << endl;
+        cout << "TOTAL FACTURADO EN ORDENES CERRADAS: $" << totalFacturadoCerradas << endl;
+    }
+    pausarParaContinuar();
+}
+
+void reporteRepuestosMasUtilizados(SistemaTaller* s) {
+    limpiarTerminal();
+    cout << "\n ==== REPORTE 2: REPUESTOS MAS UTILIZADOS (TOP 10) ====" << endl;
+
+    struct ConsumoRepuesto {
+        int idRepuesto;
+        char codigo[20];
+        char nombre[100];
+        int unidadesTotales;
+    };
+
+    int maxR = s->numRepuestos;
+    if (maxR == 0) {
+        cout << "\n[!] No hay repuestos registrados." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
+    ConsumoRepuesto* ranking = new ConsumoRepuesto[maxR];
+    int totalRanking = 0;
+
+    for (int i = 0; i < s->numRepuestos; ++i) {
+        ranking[i].idRepuesto = s->repuestos[i].id;
+        strcpy(ranking[i].codigo, s->repuestos[i].codigo);
+        strcpy(ranking[i].nombre, s->repuestos[i].nombre);
+        ranking[i].unidadesTotales = 0;
+        totalRanking++;
+    }
+
+    ArchivoHeader hDetalles;
+    if (leerHeaderDetalles(hDetalles) == ResultadoArchivoDetalles::Correcto && hDetalles.cantidadRegistros > 0) {
+        std::ifstream archivoDetalles(ARCHIVO_DETALLES, ios::in | ios::binary);
+        if (archivoDetalles.is_open()) {
+            archivoDetalles.seekg(sizeof(ArchivoHeader), ios::beg);
+            for (int i = 0; i < hDetalles.cantidadRegistros; ++i) {
+                DetalleArchivo det;
+                archivoDetalles.read(reinterpret_cast<char*>(&det), sizeof(DetalleArchivo));
+                if (!det.eliminado) {
+                   
+                    OrdenServicio* ord = buscarOrdenPorID(s, det.idOrden);
+                    if (ord != nullptr && !ord->eliminado && igualSinMayusculas(ord->estado, "Cerrada")) {
+                        
+                        for (int j = 0; j < totalRanking; ++j) {
+                            if (ranking[j].idRepuesto == det.idRepuesto) {
+                                ranking[j].unidadesTotales += det.cantidad;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            archivoDetalles.close();
+        }
+    }
+
+    for (int i = 0; i < totalRanking - 1; ++i) {
+        for (int j = 0; j < totalRanking - i - 1; ++j) {
+            if (ranking[j].unidadesTotales < ranking[j + 1].unidadesTotales) {
+                ConsumoRepuesto temp = ranking[j];
+                ranking[j] = ranking[j + 1];
+                ranking[j + 1] = temp;
+            }
+        }
+    }
+
+    int mostrarLimite = (totalRanking < 10) ? totalRanking : 10;
+    int mostradosReales = 0;
+
+    cout << left << setw(8) << "ID" << setw(15) << "Codigo" << setw(35) << "Nombre" << "Unidades Usadas" << endl;
+    cout << "------------------------------------------------------------------" << endl;
+    for (int i = 0; i < mostrarLimite; ++i) {
+        if (ranking[i].unidadesTotales > 0) {
+            cout << left << setw(8) << ranking[i].idRepuesto 
+                 << setw(15) << ranking[i].codigo 
+                 << setw(35) << ranking[i].nombre 
+                 << ranking[i].unidadesTotales << endl;
+            mostradosReales++;
+        }
+    }
+
+    if (mostradosReales == 0) {
+        cout << "[!] No hay consumo de repuestos en ordenes cerradas todavia." << endl;
+    }
+
+    delete[] ranking;
+    pausarParaContinuar();
+}
+
+void reporteFacturacionMecanicos(SistemaTaller* s) {
+    limpiarTerminal();
+    cout << "\n==== REPORTE 3: FACTURACION POR MECANICO ====" << endl;
+    cout << left << setw(25) << "Mecanico" << setw(12) << "Ordenes" << setw(15) << "M. obra ($)" << "Repuestos ($)" << endl;
+    cout << "-------------------------------------------------------------------" << endl;
+
+    int mecanicosProcesados = 0;
+    for (int i = 0; i < s->numMecanicos; ++i) {
+        Mecanico m = s->mecanicos[i];
+        
+        int ordenesCerradas = 0;
+        float totalManoObra = 0.0f;
+        float totalRepuestosMec = 0.0f;
+
+        for (int j = 0; j < s->numOrdenes; ++j) {
+            if (!s->ordenes[j].eliminado && s->ordenes[j].idMecanico == m.id && igualSinMayusculas(s->ordenes[j].estado, "Cerrada")) {
+                ordenesCerradas++;
+                totalManoObra += s->ordenes[j].manoObra;
+                float costoRep = 0.0f;
+                calcularCostoRepuestosOrden(s->ordenes[j].id, costoRep);
+                totalRepuestosMec += costoRep;
+            }
+        }
+
+        char nombreConEstado[120];
+        if (m.eliminado) {
+            sprintf(nombreConEstado, "%s (BAJA)", m.nombre);
+        } else {
+            strcpy(nombreConEstado, m.nombre);
+        }
+
+        cout << left << setw(25) << nombreConEstado 
+             << setw(12) << ordenesCerradas 
+             << setw(15) << fixed << setprecision(2) << totalManoObra 
+             << totalRepuestosMec << endl;
+        mecanicosProcesados++;
+    }
+
+    if (mecanicosProcesados == 0) {
+        cout << "[!] No hay mecanicos registrados en el sistema." << endl;
+    }
+    pausarParaContinuar();
+}
+
+void menuReportes(SistemaTaller* s) {
+    int opcion = -1;
+    while (opcion != 0) {
+        limpiarTerminal();
+        cout << "\n--- MODULO DE REPORTES ---\n"
+             << "1. Historial de vehiculo por placa\n"
+             << "2. Repuestos mas utilizados (Top 10)\n"
+             << "3. Facturacion y carga por mecanico\n"
+             << "0. Volver al menu principal\n"
+             << "Opcion: ";
+        
+        if (!(cin >> opcion)) {
+            if (cin.eof()) return;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            entradaConSaltoPendiente = false;
+            cout << "[!] Ingrese un numero valido." << endl;
+            continue;
+        }
+        entradaConSaltoPendiente = true;
+
+        switch (opcion) {
+            case 1: reporteHistorialVehiculo(s); break;
+            case 2: reporteRepuestosMasUtilizados(s); break;
+            case 3: reporteFacturacionMecanicos(s); break;
+            case 0: break;
+            default: cout << "[!] Opcion invalida." << endl; pausarParaContinuar();
+        }
+    }
+}
+
 //SISTEMA MAIN
 int main() {
     Taller taller = {};
@@ -2944,7 +3159,7 @@ int main() {
         if (vehiculosActivos > 0 && mecanicosActivos > 0 && repuestosActivos > 0) {
             cout << "4. Ordenes de servicio\n";
         }
-        cout << "5. Lista general de registros\n6. Mantenimeinto\n0. Salir\nOpcion: ";
+        cout << "5. Lista general de registros\n6. Mantenimeinto\n7. Reportes\n0. Salir\nOpcion: ";
         if (!(cin >> opcion)) {
             if (cin.eof()) break;
             cin.clear();
@@ -2968,6 +3183,7 @@ int main() {
                 break;
             case 5: menuListaGeneral(&sistema); break;
             case 6: menuMantenimiento(&sistema); break;
+            case 7: menuReportes(&sistema); break;
             case 0: 
                 salir = confirmarAccion("Salir del sistema"); 
                 if (salir) {
