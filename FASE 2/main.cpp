@@ -2457,8 +2457,14 @@ void menuVehiculos(SistemaTaller* s) {
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
+
+        int vehiculoActivos = 0;
+        for (int i = 0; i < s->numVehiculos; i++) {
+            if (!s->vehiculos[i].eliminado) vehiculoActivos++;
+        }
+
         cout << "\n--- VEHICULOS ---\n1. Registrar\n";
-        if (s->numVehiculos > 0) {
+        if (vehiculoActivos > 0) {
             cout << "2. Buscar\n3. Actualizar\n4. Eliminar\n5. Listar\n";
         }
         cout << "0. Volver\nOpcion: ";
@@ -2471,7 +2477,7 @@ void menuVehiculos(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (s->numVehiculos == 0 && opcion != 0 && opcion != 1) {
+        if (vehiculoActivos == 0 && opcion != 0 && opcion != 1) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
