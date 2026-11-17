@@ -1542,6 +1542,50 @@ bool capturarDatosMecanico(SistemaTaller* s, Mecanico& datos) {
     return true;
 }
 
+bool eliminarMecanico(SistemaTaller* s, int id) {
+    Mecanico* m = buscarMecanicoporID(s, id);
+    if (m == nullptr || m->eliminado) return false;
+
+    if (contarOrdenesAbiertasMecanico(s, id) > 0) return false;
+
+    m->eliminado = true;
+    m->fechaUltimaModificacion = time(nullptr);
+
+    const streamoff posicion =
+        static_cast<streamoff>(sizeof(ArchivoHeader))+
+        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Mecanico));
+
+    std::fstream archivo(ARCHIVO_MECANICOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return false;
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) {
+        archivo.close();
+        return false;
+    }
+    archivo.write(reinterpret_cast<const char*>(m), sizeof(Mecanico));
+    archivo.close();
+
+    ArchivoHeader header;
+    std::ifstream lector(ARCHIVO_MECANICOS, ios::in | ios::binary);
+    if (lector.is_open()) {
+        lector.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+        lector.close();
+    }
+
+    if (header.registrosActivos > 0) {
+        header.registrosActivos--;
+        std::fstream escritor(ARCHIVO_MECANICOS, ios::in | ios::out | ios::binary);
+        if (escritor.is_open()) {
+            escritor.seekp(0, ios::beg);
+            escritor.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+            escritor.close();
+        }
+    }
+
+    return true;
+
+}
+
 void menuRegistrarMecanico(SistemaTaller* s) {
     limpiarTerminal();
     Mecanico nuevoM = {};
@@ -1586,19 +1630,36 @@ void mostrarMecanico(SistemaTaller* s) {
     mostrarMecanicoUnico(m);
 }
 
+void menuEliminarMecanico(SistemaTaller* s) {
+    limpiarTerminal();
+    int id = 0;
+    cout << "\n--- ELIMINAR MECANICO ---\n";
+    mostrarOpcionVolver();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    if (Validaciones::leerEnteroRango("ID: ", 1, numeric_limits<int>::max(), id) !=
+        ResultadoEntrada::Correcto) return;
+    if (!confirmarAccion("Eliminar mecanico")) return;
+    cout << (eliminarMecanico(s, id) ? "[OK] Mecanico eliminado." :
+             "[!] No existe, ya esta eliminado o tiene ordenes abiertas asignadas.") << endl;
+}
+
 void mostrarListaMecanico(SistemaTaller* s) {
     int cantidad = 0;
-    Mecanico* lista = listarMecanico(s, &cantidad);
+    for (int i = 0; i < s->numMecanicos; i++) {
+        if (!s->mecanicos[i].eliminado) activos++;
+    }
 
-    if (lista == nullptr || cantidad == 0) {
-        cout << "\n[!] No hay mecanicos registrados para mostrar." << endl;
+    if (activos == 0) {
+        cout << "\n[!] No hay mecanicos registados para mostrar." << endl;
         return;
     }
 
-    cout << "\n=== LISTA DE MECANCIOS (" << cantidad << ") ===" << endl;
-    for (int i = 0; i < cantidad; i++) {
-        mostrarMecanicoUnico(&lista[i]);
-        cout << "Ordenes abiertas: " << contarOrdenesAbiertasMecanico(s, lista[i].id) << endl;
+    cout << "\n==== LISTA DE MECANICOS (" << activos << ") =====" << endl;
+    for (int i = 0; i < s->numMecanicos; i++) {
+        if (!s->mecanicos[i].eliminado) {
+            mostrarMecanicoUnico(&s->mecanicos[i]);
+            cout << "Ordenes Abiertas: " << contarOrdenesAbiertasMecanico(s, s->mecanicos[i].id) << endl;
+        }
     }
 }
 
@@ -1679,24 +1740,48 @@ bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio) 
 }
 
 bool eliminarRepuesto(SistemaTaller* s, int id) {
-    int pos = -1;
-    for (int i = 0; i < s->numRepuestos; i++) {
-        if (s->repuestos[i].id == id) {
-            pos = i;
-            break;
+    Repuesto* r = buscarRepuestoPorID(s, id);
+    if (r == nullptr || r->eliminado) return false;
+
+    bool tieneDetalles = false;
+    if (existeDetalleDeRepuesto(id, tieneDetalles) != ResultadoArchivoDetalles::Correcto || tieneDetalles) {
+        return false;
+    }
+
+    r->eliminado = true;
+    r->fechaUltimaModificacion = time(nullptr);
+
+    const streamoff posicion =
+       static_cast<streamoff>(sizeof(ArchivoHeader)) +
+       static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Repuesto));
+
+    std::fstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return false;
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) {
+        archivo.close();
+        return false;
+    }
+    archivo.write(reinterpret_cast<const char*>(r), sizeof(Repuesto));
+    archivo.close();
+
+    ArchivoHeader header;
+    std::ifstream lector(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+    if (lector.is_open()) {
+        lector.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+        lector.close();
+    }
+
+    if (header.registrosActivos > 0) {
+        header.registrosActivos--;
+        std::fstream escritor(ARCHIVO_REPUESTOS, ios::in | ios::out | ios::binary);
+        if (escritor.is_open()) {
+            escritor.seekp(0, ios::beg);
+            escritor.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+            escritor.close();
         }
     }
 
-    if (pos == -1) return false;
-    bool tieneDetalles = false;
-    if (existeDetalleDeRepuesto(id, tieneDetalles) != ResultadoArchivoDetalles::Correcto ||
-        tieneDetalles) return false;
-
-    for (int i = pos; i < s->numRepuestos - 1; i++) {
-        s->repuestos[i] = s->repuestos[i + 1];
-    }
-    
-    s->numRepuestos--;
     return true;
 }
 
@@ -2497,8 +2582,15 @@ void menuMecanicos(SistemaTaller* s) {
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
+        int mecanicosActivos = 0;
+        for (int i = 0; i < s->numMecanicos; i++) {
+            if (!s->mecanicos[i].eliminado) mecanicosActivos++;
+        }
+
         cout << "\n--- MECANICOS ---\n1. Registrar\n";
-        if (s->numMecanicos > 0) cout << "2. Listar\n";
+        if (s->numMecanicos > 0) {
+            cout << "2. Listar\n3. Eliminar\n";
+        }
         cout << "0. Volver\nOpcion: ";
         if (!(cin >> opcion)) {
             if (cin.eof()) return;
@@ -2509,13 +2601,14 @@ void menuMecanicos(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (s->numMecanicos == 0 && opcion != 0 && opcion != 1) {
+        if (mecanicosActivos == 0 && opcion != 0 && opcion != 1) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
         switch (opcion) {
             case 1: menuRegistrarMecanico(s); pausarParaContinuar(); break;
-            case 2: menuListarMecanico(s); break;
+            case 2: menuListarMecanico(s); pausarParaContinuar(); break;
+            case 3: menuEliminarMecanico(s); pausarParaContinuar(); break;
             case 0: break;
             default: cout << "[!] Opcion invalida." << endl;
         }
@@ -2526,6 +2619,10 @@ void menuRepuestos(SistemaTaller* s) {
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
+        int repuestosActivos = 0;
+        for (int i = 0; i < s->numRepuestos; i++) {
+            if (!s->repuestos[i].eliminado) repuestosActivos++;
+        }
         cout << "\n--- REPUESTOS ---\n1. Registrar\n";
         if (s->numRepuestos > 0) {
             cout << "2. Buscar\n3. Entrada de mercancia\n4. Cambiar precio\n"
@@ -2559,12 +2656,22 @@ void menuRepuestos(SistemaTaller* s) {
 }
 
 void menuOrdenes(SistemaTaller* s) {
-    if (s->numVehiculos == 0 || s->numMecanicos == 0 || s->numRepuestos == 0) return;
+    int vehiculosActivos = 0; for(int i=0; i<s->numVehiculos; ++i) if(!s->vehiculos[i].eliminado) vehiculosActivos++;
+    int mecanicosActivos = 0; for(int i=0; i<s->numMecanicos; ++i) if(!s->mecanicos[i].eliminado) mecanicosActivos++;
+    int repuestosActivos = 0; for(int i=0; i<s->numRepuestos; ++i) if(!s->repuestos[i].eliminado) repuestosActivos++;
+
+    if (vehiculosActivos == 0 || mecanicosActivos == 0 || repuestosActivos == 0) return;
+
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
+        int ordenesActivas = 0;
+        for (int i = 0; i < s->numOrdenes; i++) {
+            if (!s->ordenes[i].eliminado) ordenesActivas++;
+        }
+
         cout << "\n--- ORDENES DE SERVICIO ---\n1. Abrir orden\n";
-        if (s->numOrdenes > 0) {
+        if (ordenesActivas > 0) {
             cout << "2. Agregar repuesto\n3. Quitar repuesto\n4. Cerrar orden\n"
                  << "5. Anular orden\n6. Ver detalle\n7. Listar ordenes\n";
         }
@@ -2578,7 +2685,7 @@ void menuOrdenes(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (s->numOrdenes == 0 && opcion != 0 && opcion != 1) {
+        if (ordenesActivas == 0 && opcion != 0 && opcion != 1) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
