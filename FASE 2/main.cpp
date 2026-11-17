@@ -740,7 +740,11 @@ void guardarDatos(SistemaTaller& s) {
     {
         std::ofstream archivo(ARCHIVO_VEHICULOS, ios::out | ios::binary);
         if (archivo.is_open()) {
-            ArchivoHeader header = { s.numVehiculos, s.siguienteIdVehiculos, s.numVehiculos, VERSION_ARCHIVO };
+            int activos = 0;
+            for (int i = 0; i < s.numVehiculos; i++) {
+                if (!s.vehiculos[i].eliminado) activos++;
+            }
+            ArchivoHeader header = { s.numVehiculos, s.siguienteIdVehiculos, activos, VERSION_ARCHIVO };
             archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
             if (s.numVehiculos > 0) {
                 archivo.write(reinterpret_cast<char*>(s.vehiculos), sizeof(Vehiculo) * s.numVehiculos);
@@ -752,7 +756,11 @@ void guardarDatos(SistemaTaller& s) {
     {
         std::ofstream archivo(ARCHIVO_MECANICOS, ios::out | ios::binary);
         if (archivo.is_open()) {
-            ArchivoHeader header = { s.numMecanicos, s.siguienteIdMecanicos, s.numMecanicos, VERSION_ARCHIVO };
+            int activos = 0;
+            for (int i = 0; i < s.numMecanicos; i++) {
+                if (!s.mecanicos[i].eliminado) activos++;
+            }
+            ArchivoHeader header = { s.numMecanicos, s.siguienteIdMecanicos, activos, VERSION_ARCHIVO };
             archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
             if (s.numMecanicos > 0) {
                 archivo.write(reinterpret_cast<char*>(s.mecanicos), sizeof(Mecanico) * s.numMecanicos);
@@ -764,7 +772,11 @@ void guardarDatos(SistemaTaller& s) {
     {
         std::ofstream archivo(ARCHIVO_REPUESTOS, ios::out | ios::binary);
         if (archivo.is_open()) {
-            ArchivoHeader header = { s.numRepuestos, s.siguienteIdRepuestos, s.numRepuestos, VERSION_ARCHIVO };
+            int activos = 0;
+            for (int i = 0; i < s.numRepuestos; ++i) {
+                if (!s.repuestos[i].eliminado) activos++;
+            }
+            ArchivoHeader header = { s.numRepuestos, s.siguienteIdRepuestos, activos, VERSION_ARCHIVO };
             archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
             if (s.numRepuestos > 0) {
                 archivo.write(reinterpret_cast<char*>(s.repuestos), sizeof(Repuesto) * s.numRepuestos);
@@ -776,7 +788,11 @@ void guardarDatos(SistemaTaller& s) {
     {
         std::ofstream archivo(ARCHIVO_ORDENES, ios::out | ios::binary);
         if (archivo.is_open()) {
-            ArchivoHeader header = { s.numOrdenes, s.siguienteIdOrdenes, s.numOrdenes, VERSION_ARCHIVO };
+            int activos = 0;
+            for (int i = 0; i < s.numOrdenes; ++i) {
+                if (!s.ordenes[i].eliminado) activos++;
+            }
+            ArchivoHeader header = { s.numOrdenes, s.siguienteIdOrdenes, activos, VERSION_ARCHIVO };
             archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
             if (s.numOrdenes > 0) {
                 archivo.write(reinterpret_cast<char*>(s.ordenes), sizeof(OrdenServicio) * s.numOrdenes);
@@ -1191,12 +1207,19 @@ Vehiculo** buscarVehiculosPorPropietario(SistemaTaller* s, const char* subcadena
 }
 
 Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad) {
-    *cantidad = s->numVehiculos;
-    if (s->numVehiculos == 0) return nullptr;
-
-    Vehiculo** lista = new Vehiculo*[s->numVehiculos];
+    int activos = 0;
     for (int i = 0; i < s->numVehiculos; i++) {
-        lista[i] = &(s->vehiculos[i]);
+        if (!s->vehiculos[i].eliminado) activos++;
+    }
+    *cantidad = activos;
+    if (activos == 0) return nullptr;
+
+    Vehiculo** lista = new Vehiculo*[activos];
+    int j = 0;
+    for (int i = 0; i < s->numVehiculos; i++) {
+        if (!s->vehiculos[i].eliminado) {
+            lista[j++] = &(s->vehiculos[i]);
+        }
     }
     return lista;
 }
@@ -1222,24 +1245,48 @@ bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos) {
 }
 
 bool eliminarVehiculo(SistemaTaller* s, int id) {
-    int pos = -1;
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (s->vehiculos[i].id == id) {
-            pos = i;
-            break;
-        }
-    }
+    Vehiculo* v = buscarVehiculoPorID(s, id);
+    if (v == nullptr || v->eliminado) return false;
 
-    if (pos == -1) return false;
     for (int i = 0; i < s->numOrdenes; ++i) {
         if (s->ordenes[i].idVehiculo == id) return false;
     }
 
-    for (int i = pos; i < s->numVehiculos - 1; i++) {
-        s->vehiculos[i] = s->vehiculos[i + 1];
+    v->eliminado = true;
+    v->fechaUltimaModificacion = time(nullptr);
+
+    const streamoff posicion = 
+        static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Vehiculo));
+
+    std::fstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return false;
+
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) {
+        archivo.close();
+        return false;
     }
-    
-    s->numVehiculos--;
+    archivo.write(reinterpret_cast<const char*>(v), sizeof(Vehiculo));
+    archivo.close();
+
+    ArchivoHeader header;
+    std::ifstream lector(ARCHIVO_VEHICULOS, ios::in | ios::binary);
+    if (lector.is_open()) {
+        lector.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+        lector.close();
+    }
+
+    if (header.registrosActivos > 0) {
+        header.registrosActivos--;
+        std::fstream escritor(ARCHIVO_VEHICULOS, ios::in | ios::out | ios::binary);
+        if (escritor.is_open()) {
+            escritor.seekp(0, ios::beg);
+            escritor.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+            escritor.close();
+        }
+    }
+
     return true;
 }
 
@@ -2554,7 +2601,7 @@ void crearBackup() {
 #ifdef _WIN32
     cmd = "mkdir " + string(carpeta);
 #else 
-    cmd = "mkdir -p" + string(carpeta);
+    cmd = "mkdir -p " + string(carpeta);
 #endif
     system(cmd.c_str());
 
@@ -2591,7 +2638,7 @@ void verificarIntegridad() {
     int mecanicosVerificados = 0;
     int repuestosVerificados = 0;
     int ordenesVerificados = 0;
-    int problemasVerificados = 0;
+    int problemasEncontrados = 0;
 
     {
         ifstream f(ARCHIVO_VEHICULOS, ios::binary);
