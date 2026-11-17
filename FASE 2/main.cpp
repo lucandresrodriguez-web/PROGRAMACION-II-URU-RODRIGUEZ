@@ -2543,6 +2543,46 @@ void menuOrdenes(SistemaTaller* s) {
     }
 }
 
+//MODULO DE MANTENIMIENTO
+void crearBackup() {
+    time_t ahora = time(nullptr);
+    tm* local = localtime(&ahora);
+    char carpeta[64];
+    strftime(carpeta, sizeof(carpeta), "backup_%Y-%m-%d_%H-%M-%S", local);
+
+    string cmd = "mkdir ";
+#ifdef _WIN32
+    cmd = "mkdir " + string(carpeta);
+#else 
+    cmd = "mkdir -p" + string(carpeta);
+#endif
+    system(cmd.c_str());
+
+    const char* archivos[] = {
+        "taller.bin",
+        "vehiculos.bin",
+        "mecanicos.bin",
+        "ordenes.bin",
+        "repuestos.bin",
+        "detalles.bin",
+    };
+
+    for (const char* nombreArch : archivos) {
+        ifstream origen(nombreArch, ios::binary);
+        if (!origen.is_open()) continue;
+
+        string rutaDestino = string(carpeta) + "/" + nombreArch;
+        ofstream destino(rutaDestino, ios::binary);
+        if (destino.is_open()) {
+            destino << origen.rdbuf();
+            destino.close();
+        }
+        origen.close();
+    }
+
+    cout << "[OK] Respaldo creado correctamente en la carpeta: " << carpeta << endl;
+}
+
 //SISTEMA MAIN
 int main() {
     Taller taller = {};
