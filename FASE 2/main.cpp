@@ -1782,6 +1782,16 @@ bool eliminarRepuesto(SistemaTaller* s, int id) {
         }
     }
 
+    if (pos == -1) return false;
+    bool tieneDetalles = false;
+    if (existeDetalleDeRepuesto(id, tieneDetalles) != ResultadoArchivoDetalles::Correcto ||
+        tieneDetalles) return false;
+
+    for (int i = pos; i < s->numRepuestos - 1; i++) {
+        s->repuestos[i] = s->repuestos[i + 1];
+    }
+    
+    s->numRepuestos--;
     return true;
 }
 
