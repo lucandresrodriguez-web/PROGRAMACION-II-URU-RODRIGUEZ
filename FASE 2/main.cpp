@@ -2583,6 +2583,175 @@ void crearBackup() {
     cout << "[OK] Respaldo creado correctamente en la carpeta: " << carpeta << endl;
 }
 
+void verificarIntegridad() {
+    limpiarTerminal();
+    cout << "\n==== INICIANDO VERIFICACION DE INTEGRIDAD ====" << endl;
+
+    int vehiculosVerificados = 0;
+    int mecanicosVerificados = 0;
+    int repuestosVerificados = 0;
+    int ordenesVerificados = 0;
+    int problemasVerificados = 0;
+
+    {
+        ifstream f(ARCHIVO_VEHICULOS, ios::binary);
+        if (f.is_open()) {
+            ArchivoHeader h;
+            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+
+            f.seekg(0, ios::end);
+            streamoff tam = f.tellg();
+            streamoff esperado = sizeof(ArchivoHeader) + static_cast<streamoff>(h.cantidadRegistros) * sizeof(Vehiculo);
+            if (tam != esperado) {
+                cout << "[ROTO] Header de vehiculos.bin indica " << h.cantidadRegistros << " registros, pero el espacio en disco no coincide." << endl;
+                problemasEncontrados++;
+            }
+
+            f.seekg(sizeof(ArchivoHeader), ios::beg);
+            for (int i = 0; i < h.cantidadRegistros; ++i) {
+                Vehiculo v;
+                f.read(reinterpret_cast<char*>(&v), sizeof(Vehiculo));
+                vehiculosVerificados++;
+            }
+            f.close();
+        }
+    }
+
+    {
+        ifstream f(ARCHIVO_MECANICOS, ios::binary);
+        if (f.is_open()) {
+            ArchivoHeader h;
+            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+            f.seekg(sizeof(ArchivoHeader), ios::beg);
+            for (int i = 0; i < h.cantidadRegistros; ++i) {
+                Mecanico m;
+                f.read(reinterpret_cast<char*>(&m), sizeof(Mecanico));
+                mecanicosVerificados++;
+            }
+            f.close();
+        }
+    }
+
+    {
+        ifstream f(ARCHIVO_REPUESTOS, ios::binary);
+        if (f.is_open()) {
+            ArchivoHeader h;
+            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+            f.seekg(sizeof(ArchivoHeader), ios::beg);
+            for (int i = 0; i < h.cantidadRegistros; ++i) {
+                Repuesto r;
+                f.read(reinterpret_cast<char*>(&r), sizeof(Repuesto));
+                repuestosVerificados++;
+                if (r.stock < 0) {
+                    cout << "[ROTO] Repuesto ID " << r.id << " (" << r.codigo << ") tiene stock negativo: " << r.stock << endl;
+                    problemasEncontrados++;
+                }
+            }
+            f.close();
+        }
+    }
+
+    {
+        ifstream f(ARCHIVO_ORDENES, ios::binary);
+        if (f.is_open()) {
+            ArchivoHeader h;
+            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
+            f.seekg(sizeof(ArchivoHeader), ios::beg);
+            for (int i = 0; i < h.cantidadRegistros; ++i) {
+                OrdenServicio o;
+                f.read(reinterpret_cast<char*>(&o), sizeof(OrdenServicio));
+                ordenesVerificados++;
+
+                Vehiculo v;
+                bool vExiste = false;
+                {
+                    ifstream fv(ARCHIVO_VEHICULOS, ios::binary);
+                    if (fv.is_open()) {
+                        ArchivoHeader hv; fv.read(reinterpret_cast<char*>(&hv), sizeof(ArchivoHeader));
+                        for (int j = 0; j < hv.cantidadRegistros; ++j) {
+                            fv.read(reinterpret_cast<char*>(&v), sizeof(Vehiculo));
+                            if (v.id == o.idVehiculo) { vExiste = true; break; }
+                        }
+                        fv.close();
+                    }
+                }
+
+                if (!vExiste) {
+                    cout << "[ROTO] Orden#" << o.id << " apunta al vehiculo ID " << o.idVehiculo << " (no existe en vehiculos.bin)" << endl;
+                    problemasEncontrados++;
+                } else if (strcmp(o.estado, "Abierta") == 0 && v.eliminado) {
+                    cout << "[ROTO] Orden ABIERTA #" << o.id << " apunta a un vehiculo inactivo/eliminado (ID " << v.id << ")" << endl;
+                    problemasEncontrados++;
+                }
+
+                Mecanico m;
+                bool mExiste = false;
+                {
+                    ifstream fm(ARCHIVO_MECANICOS, ios::binary);
+                    if (fm.is_open()) {
+                        ArchivoHeader hm; fm.read(reinterpret_cast<char*>(&hm), sizeof(ArchivoHeader));
+                        for (int j = 0; j < hm.cantidadRegistros; ++j) {
+                            fm.read(reinterpret_cast<char*>(&m), sizeof(Mecanico));
+                            if (m.id == o.idMecanico) { mExiste = true; break; }
+                        }
+                        fm.close();
+                    }
+                }
+
+                if (!mExiste) {
+                    cout << "[ROTO] Orden #" << o.id << " apunta al mecanico ID" << o.idMecanico << " (no existe en mecanicos.bin)" << endl;
+                    problemasEncontrados++;
+                } else if (strcmp(o.estado, "Abierta") == 0 && m.eliminado) {
+                   cout << "[ROTO] Orden ABIERTA #" << o.id << " apunta a un mecanico dado de baja (ID " << m.id << ")" << endl;
+                   problemasEncontrados++;   
+                }
+            }
+            f.close();
+        }
+    }
+
+    cout << "\nREPORTE DE INTEGRIDAD DEL SISTEMA" << endl;
+    cout << "Vehiculos verificados : " << vehiculosVerificados << endl;
+    cout << "Mecanicos verificados : " << mecanicosVerificados << endl;
+    cout << "Repuestos verificados : " << repuestosVerificados << endl;
+    cout << "Ordenes verificadas   : " << ordenesVerificados << endl;
+    cout << "Problemas encontrados : " << problemasEncontrados << endl;
+    
+    if (problemasEncontrados == 0) {
+        cout << "Estado: SISTEMA ÍNTEGRO" << endl;
+    } else {
+        cout << "Estado: SE ENCONTRARON INCONSISTENCIAS" << endl;
+    }
+    
+    pausarParaContinuar();
+}
+
+void menuMantenimiento(SistemaTaller* s) {
+    (void)s;
+    int opcion = -1;
+    while (opcion != 0) {
+        limpiarTerminal();
+        cout << "\n--- MANTENIMIENTO ---\n"
+             << "1. Verificacion de integridad\n"
+             << "2. Crear respaldo (Backup)\n"
+             << "0. Volver\nOpcion: ";
+        if (!(cin >> opcion)) {
+            if (cin.eof()) return;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            entradaConSaltoPendiente = false;
+            continue;
+        }
+        entradaConSaltoPendiente = true;
+        switch (opcion) {
+            case 1: verificarIntegridad(); break;
+            case 2: crearBackup(); pausarParaContinuar(); break;
+            case 0: break;
+            default: cout << "[!] Opcion invalida." << endl;
+        }
+    }
+}
+
 //SISTEMA MAIN
 int main() {
     Taller taller = {};
@@ -2609,7 +2778,7 @@ int main() {
         if (sistema.numVehiculos > 0 && sistema.numMecanicos > 0 && sistema.numRepuestos > 0) {
             cout << "4. Ordenes de servicio\n";
         }
-        cout << "5. Lista general de registros\n0. Salir\nOpcion: ";
+        cout << "5. Lista general de registros\n6. Mantenimeinto\n0. Salir\nOpcion: ";
         if (!(cin >> opcion)) {
             if (cin.eof()) break;
             cin.clear();
@@ -2631,6 +2800,7 @@ int main() {
                 }
                 break;
             case 5: menuListaGeneral(&sistema); break;
+            case 6: menuMantenimiento(&sistema); break;
             case 0: 
                 salir = confirmarAccion("Salir del sistema"); 
                 if (salir) {
