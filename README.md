@@ -18,11 +18,16 @@ se documentaran los avances, progresos y entregas de cada uno de estos mismos du
 3. Pasos por referencia 
 4. Memoria Dinamica
 5. Ficheros 
+6. Ficheros binarios 
+7. Bibliotecas de C++
 
 ## Poyectos a realizar:
 
 PROYECTO 1: Taller mecanico (Colaboracion con Isidro Marmol) 
 ENTREGADO: 22-10-2026
+
+PROYECTO 2: Uso de archivos binarios y acceso aleatorio
+ENTREGADO: 21-11-2026
 
 ### Ejercicios realizados por cuenta propia:
 
