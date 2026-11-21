@@ -328,26 +328,18 @@ struct OrdenServicio {
 
 struct SistemaTaller {
     Taller taller;
-
-    Vehiculo*      vehiculos; int numVehiculos; int capacidadVehiculos;
-    Mecanico*      mecanicos; int numMecanicos; int capacidadMecanicos;
-    Repuesto*      repuestos; int numRepuestos; int capacidadRepuestos;
-    OrdenServicio* ordenes;   int numOrdenes;   int capacidadOrdenes;
-
-    int siguienteIdVehiculos;
-    int siguienteIdMecanicos;
-    int siguienteIdRepuestos;
-    int siguienteIdOrdenes;
 };
 
 // PERSISTENCIA ARCHIVOS BIN 
-const char* ARCHIVO_VEHICULOS = "vehiculos.bin";
-const char* ARCHIVO_MECANICOS = "mecanicos.bin";
-const char* ARCHIVO_REPUESTOS = "repuestos.bin";
-const char* ARCHIVO_ORDENES   = "ordenes.bin";
-const char* ARCHIVO_DETALLES  = "detalles.bin";
+const char* ARCHIVO_VEHICULOS = "Datos/vehiculos.bin";
+const char* ARCHIVO_MECANICOS = "Datos/mecanicos.bin";
+const char* ARCHIVO_REPUESTOS = "Datos/repuestos.bin";
+const char* ARCHIVO_ORDENES   = "Datos/ordenes.bin";
+const char* ARCHIVO_DETALLES  = "Datos/detalles.bin";
+const char* ARCHIVO_TALLER    = "Datos/taller.bin";
 const int   VERSION_ARCHIVO   = 1;
 const size_t MAX_DETALLES_POR_CONSULTA = 100;
+const size_t MAX_RESULTADOS_POR_CONSULTA = 100;
 
 enum class ResultadoArchivoDetalles {
     Correcto,
@@ -359,6 +351,52 @@ enum class ResultadoArchivoDetalles {
     RegistroNoEncontrado,
     ErrorLectura,
     ErrorEscritura
+};
+
+template <typename Registro>
+class LectorRegistrosArchivo {
+public:
+    LectorRegistrosArchivo() : cantidad_(0), indice_(0) {}
+
+    ResultadoArchivoDetalles abrir(const char* ruta, const ArchivoHeader& header) {
+        archivo_.close();
+        archivo_.clear();
+        cantidad_ = 0;
+        indice_ = 0;
+        archivo_.open(ruta, ios::in | ios::binary);
+        if (!archivo_.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+
+        archivo_.seekg(0, ios::end);
+        const streamoff tamEsperado =
+            static_cast<streamoff>(sizeof(ArchivoHeader)) +
+            static_cast<streamoff>(header.cantidadRegistros) *
+                static_cast<streamoff>(sizeof(Registro));
+        if (!archivo_ || archivo_.tellg() != tamEsperado) {
+            return ResultadoArchivoDetalles::RegistroInconsistente;
+        }
+        archivo_.seekg(sizeof(ArchivoHeader), ios::beg);
+        if (!archivo_) return ResultadoArchivoDetalles::ErrorLectura;
+        cantidad_ = header.cantidadRegistros;
+        return ResultadoArchivoDetalles::Correcto;
+    }
+
+    ResultadoArchivoDetalles siguiente(Registro& registro) {
+        if (indice_ >= cantidad_) return ResultadoArchivoDetalles::RegistroNoEncontrado;
+        archivo_.read(reinterpret_cast<char*>(&registro), sizeof(Registro));
+        if (!archivo_) return ResultadoArchivoDetalles::ErrorLectura;
+
+        // Todos los registros persistidos comienzan con un ID secuencial.
+        int id = 0;
+        memcpy(&id, &registro, sizeof(id));
+        if (id != indice_ + 1) return ResultadoArchivoDetalles::RegistroInconsistente;
+        ++indice_;
+        return ResultadoArchivoDetalles::Correcto;
+    }
+
+private:
+    std::ifstream archivo_;
+    int cantidad_;
+    int indice_;
 };
 
 ResultadoArchivoDetalles leerHeaderDetalles(ArchivoHeader& header) {
@@ -541,7 +579,10 @@ ResultadoArchivoDetalles buscarDetalleOrdenRepuesto(
     return ResultadoArchivoDetalles::RegistroNoEncontrado;
 }
 
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
+ResultadoArchivoDetalles leerHeaderRepuestos(ArchivoHeader& header);
+ResultadoArchivoDetalles buscarRepuestoPorID(
+    int id, Repuesto& repuesto, bool incluirEliminado = false);
+ResultadoArchivoDetalles guardarRepuesto(const Repuesto& repuesto);
 
 ResultadoArchivoDetalles contarDetallesDeOrden(int idOrden, size_t& cantidad) {
     cantidad = 0;
@@ -627,6 +668,7 @@ ResultadoArchivoDetalles existeDetalleDeRepuesto(int idRepuesto, bool& existe) {
 }
 
 ResultadoArchivoDetalles validarRestitucionStockOrden(SistemaTaller* s, int idOrden) {
+    (void)s;
     ArchivoHeader header;
     ResultadoArchivoDetalles resultado = leerHeaderDetalles(header);
     if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
@@ -645,9 +687,13 @@ ResultadoArchivoDetalles validarRestitucionStockOrden(SistemaTaller* s, int idOr
         }
         if (detalle.idOrden != idOrden || detalle.eliminado) continue;
 
-        Repuesto* repuesto = buscarRepuestoPorID(s, detalle.idRepuesto);
-        if (detalle.cantidad <= 0 || repuesto == nullptr ||
-            repuesto->stock > numeric_limits<int>::max() - detalle.cantidad) {
+        Repuesto repuesto;
+        if (detalle.cantidad <= 0) {
+            return ResultadoArchivoDetalles::RegistroInconsistente;
+        }
+        resultado = buscarRepuestoPorID(detalle.idRepuesto, repuesto);
+        if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+        if (repuesto.stock > numeric_limits<int>::max() - detalle.cantidad) {
             return ResultadoArchivoDetalles::RegistroInconsistente;
         }
     }
@@ -656,6 +702,7 @@ ResultadoArchivoDetalles validarRestitucionStockOrden(SistemaTaller* s, int idOr
 }
 
 ResultadoArchivoDetalles restituirStockOrden(SistemaTaller* s, int idOrden) {
+    (void)s;
     ArchivoHeader header;
     ResultadoArchivoDetalles resultado = leerHeaderDetalles(header);
     if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
@@ -674,10 +721,16 @@ ResultadoArchivoDetalles restituirStockOrden(SistemaTaller* s, int idOrden) {
         }
         if (detalle.idOrden == idOrden && !detalle.eliminado) {
             if (detalle.cantidad <= 0) return ResultadoArchivoDetalles::RegistroInconsistente;
-            Repuesto* repuesto = buscarRepuestoPorID(s, detalle.idRepuesto);
-            if (repuesto == nullptr) return ResultadoArchivoDetalles::RegistroInconsistente;
-            repuesto->stock += detalle.cantidad;
-            repuesto->fechaUltimaModificacion = time(nullptr);
+            Repuesto repuesto;
+            resultado = buscarRepuestoPorID(detalle.idRepuesto, repuesto);
+            if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+            if (repuesto.stock > numeric_limits<int>::max() - detalle.cantidad) {
+                return ResultadoArchivoDetalles::RegistroInconsistente;
+            }
+            repuesto.stock += detalle.cantidad;
+            repuesto.fechaUltimaModificacion = time(nullptr);
+            resultado = guardarRepuesto(repuesto);
+            if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
         }
     }
 
@@ -736,195 +789,81 @@ ResultadoArchivoDetalles actualizarDetallePorID(int id, const DetalleArchivo& de
     return ResultadoArchivoDetalles::Correcto;
 }
 
-void guardarDatos(SistemaTaller& s) {
-    {
-        std::ofstream archivo(ARCHIVO_VEHICULOS, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            int activos = 0;
-            for (int i = 0; i < s.numVehiculos; i++) {
-                if (!s.vehiculos[i].eliminado) activos++;
-            }
-            ArchivoHeader header = { s.numVehiculos, s.siguienteIdVehiculos, activos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numVehiculos > 0) {
-                archivo.write(reinterpret_cast<char*>(s.vehiculos), sizeof(Vehiculo) * s.numVehiculos);
-            }
-            archivo.close();
-        }
-    }
+ResultadoArchivoDetalles cargarDatos() {
+    const char* archivosEntidades[] = {
+        ARCHIVO_VEHICULOS,
+        ARCHIVO_MECANICOS,
+        ARCHIVO_REPUESTOS,
+        ARCHIVO_ORDENES,
+        ARCHIVO_DETALLES,
+    };
 
-    {
-        std::ofstream archivo(ARCHIVO_MECANICOS, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            int activos = 0;
-            for (int i = 0; i < s.numMecanicos; i++) {
-                if (!s.mecanicos[i].eliminado) activos++;
-            }
-            ArchivoHeader header = { s.numMecanicos, s.siguienteIdMecanicos, activos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numMecanicos > 0) {
-                archivo.write(reinterpret_cast<char*>(s.mecanicos), sizeof(Mecanico) * s.numMecanicos);
-            }
-            archivo.close();
-        }
-    }
+    for (const char* nombreArch : archivosEntidades) {
+        ifstream existente(nombreArch, ios::in | ios::binary);
+        if (existente.is_open()) continue;
 
-    {
-        std::ofstream archivo(ARCHIVO_REPUESTOS, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            int activos = 0;
-            for (int i = 0; i < s.numRepuestos; ++i) {
-                if (!s.repuestos[i].eliminado) activos++;
-            }
-            ArchivoHeader header = { s.numRepuestos, s.siguienteIdRepuestos, activos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numRepuestos > 0) {
-                archivo.write(reinterpret_cast<char*>(s.repuestos), sizeof(Repuesto) * s.numRepuestos);
-            }
-            archivo.close();
-        }
+        ofstream nuevo(nombreArch, ios::out | ios::binary);
+        if (!nuevo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+        ArchivoHeader header = {0, 1, 0, VERSION_ARCHIVO};
+        nuevo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        if (!nuevo) return ResultadoArchivoDetalles::ErrorEscritura;
+        nuevo.close();
+        if (nuevo.fail()) return ResultadoArchivoDetalles::ErrorEscritura;
     }
-
-    {
-        std::ofstream archivo(ARCHIVO_ORDENES, ios::out | ios::binary);
-        if (archivo.is_open()) {
-            int activos = 0;
-            for (int i = 0; i < s.numOrdenes; ++i) {
-                if (!s.ordenes[i].eliminado) activos++;
-            }
-            ArchivoHeader header = { s.numOrdenes, s.siguienteIdOrdenes, activos, VERSION_ARCHIVO };
-            archivo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (s.numOrdenes > 0) {
-                archivo.write(reinterpret_cast<char*>(s.ordenes), sizeof(OrdenServicio) * s.numOrdenes);
-            }
-            archivo.close();
-        }
-    }
+    return ResultadoArchivoDetalles::Correcto;
 }
 
-void cargarDatos(SistemaTaller& s) {
-    {
-        std::ifstream existente(ARCHIVO_DETALLES, ios::in | ios::binary);
-        if (!existente.is_open()) {
-            std::ofstream nuevo(ARCHIVO_DETALLES, ios::out | ios::binary | ios::app);
-            if (!nuevo.is_open()) {
-                cerr << "[!] No se pudo crear el archivo de detalles." << endl;
-                return;
-            }
-
-            ArchivoHeader header = {0, 1, 0, VERSION_ARCHIVO};
-            nuevo.write(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (!nuevo) {
-                cerr << "[!] No se pudo inicializar el archivo de detalles." << endl;
-                return;
-            }
-        }
+ResultadoArchivoDetalles leerTaller(Taller& taller) {
+    std::ifstream archivo(ARCHIVO_TALLER, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.read(reinterpret_cast<char*>(&taller), sizeof(Taller));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.seekg(0, ios::end);
+    if (!archivo || archivo.tellg() != static_cast<streamoff>(sizeof(Taller)) ||
+        memchr(taller.nombre, '\0', sizeof(taller.nombre)) == nullptr ||
+        memchr(taller.rif, '\0', sizeof(taller.rif)) == nullptr ||
+        memchr(taller.direccion, '\0', sizeof(taller.direccion)) == nullptr ||
+        memchr(taller.telefono, '\0', sizeof(taller.telefono)) == nullptr) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
     }
+    return ResultadoArchivoDetalles::Correcto;
+}
 
-    {
-        std::ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header;
-            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (!archivo.fail()) {
-                s.siguienteIdVehiculos = header.proximoID;
-                if (header.cantidadRegistros > 0) {
-                    if (header.cantidadRegistros > s.capacidadVehiculos) {
-                        delete[] s.vehiculos;
-                        s.capacidadVehiculos = header.cantidadRegistros * 2;
-                        s.vehiculos = new Vehiculo[s.capacidadVehiculos];
-                    }
-                    archivo.read(reinterpret_cast<char*>(s.vehiculos), sizeof(Vehiculo) * header.cantidadRegistros);
-                    s.numVehiculos = header.cantidadRegistros;
-                }
-            }
-            archivo.close();
-        }
+ResultadoArchivoDetalles guardarTaller(const Taller& taller) {
+    if (memchr(taller.nombre, '\0', sizeof(taller.nombre)) == nullptr ||
+        memchr(taller.rif, '\0', sizeof(taller.rif)) == nullptr ||
+        memchr(taller.direccion, '\0', sizeof(taller.direccion)) == nullptr ||
+        memchr(taller.telefono, '\0', sizeof(taller.telefono)) == nullptr) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
     }
-
-    {
-        std::ifstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header;
-            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (!archivo.fail()) {
-                s.siguienteIdMecanicos = header.proximoID;
-                if (header.cantidadRegistros > 0) {
-                    if (header.cantidadRegistros > s.capacidadMecanicos) {
-                        delete[] s.mecanicos;
-                        s.capacidadMecanicos = header.cantidadRegistros * 2;
-                        s.mecanicos = new Mecanico[s.capacidadMecanicos];
-                    }
-                    archivo.read(reinterpret_cast<char*>(s.mecanicos), sizeof(Mecanico) * header.cantidadRegistros);
-                    s.numMecanicos = header.cantidadRegistros;
-                }
-            }
-            archivo.close();
-        }
-    }
-
-    {
-        std::ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header;
-            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (!archivo.fail()) {
-                s.siguienteIdRepuestos = header.proximoID;
-                if (header.cantidadRegistros > 0) {
-                    if (header.cantidadRegistros > s.capacidadRepuestos) {
-                        delete[] s.repuestos;
-                        s.capacidadRepuestos = header.cantidadRegistros * 2;
-                        s.repuestos = new Repuesto[s.capacidadRepuestos];
-                    }
-                    archivo.read(reinterpret_cast<char*>(s.repuestos), sizeof(Repuesto) * header.cantidadRegistros);
-                    s.numRepuestos = header.cantidadRegistros;
-                }
-            }
-            archivo.close();
-        }
-    }
-
-    {
-        std::ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
-        if (archivo.is_open()) {
-            ArchivoHeader header;
-            archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-            if (!archivo.fail()) {
-                s.siguienteIdOrdenes = header.proximoID;
-                if (header.cantidadRegistros > 0) {
-                    if (header.cantidadRegistros > s.capacidadOrdenes) {
-                        delete[] s.ordenes;
-                        s.capacidadOrdenes = header.cantidadRegistros * 2;
-                        s.ordenes = new OrdenServicio[s.capacidadOrdenes];
-                    }
-                    archivo.read(reinterpret_cast<char*>(s.ordenes), sizeof(OrdenServicio) * header.cantidadRegistros);
-                    s.numOrdenes = header.cantidadRegistros;
-                }
-            }
-            archivo.close();
-        }
-    }
+    std::ofstream archivo(ARCHIVO_TALLER, ios::out | ios::binary | ios::trunc);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.write(reinterpret_cast<const char*>(&taller), sizeof(Taller));
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.close();
+    return archivo ? ResultadoArchivoDetalles::Correcto
+                   : ResultadoArchivoDetalles::ErrorEscritura;
 }
 
 // Prototipos de funciones
-Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id);
-Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa);
-Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad);
-void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad);
-void mostrarMecanicoUnico(Mecanico* m);
+ResultadoArchivoDetalles buscarVehiculoPorID(
+    int id, Vehiculo& vehiculo, bool incluirEliminado = false,
+    streamoff* posicionLeida = nullptr);
+ResultadoArchivoDetalles buscarVehiculoPorPlaca(const char* placa, Vehiculo& vehiculo, bool incluirEliminado = false);
+void mostrarMecanicoUnico(const Mecanico& mecanico);
 void mostrarListaMecanico(SistemaTaller* s);
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id);
-Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo);
-Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena);
-void mostrarRepuesto(Repuesto* repuesto);
-void mostrarListaRepuestos(Repuesto** repuestos, int cantidad);
-Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula);
-Mecanico* buscarMecanicoporID(SistemaTaller* s, int id);
-int contarOrdenesAbiertasMecanico(SistemaTaller* s, int idMecanico);
-OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id);
+void mostrarRepuesto(const Repuesto& repuesto);
+ResultadoArchivoDetalles contarOrdenesAbiertasMecanico(int idMecanico, int& cantidad);
+ResultadoArchivoDetalles leerHeaderOrdenes(ArchivoHeader& header);
+ResultadoArchivoDetalles buscarOrdenPorID(int id, OrdenServicio& orden, bool incluirEliminado = false);
+ResultadoArchivoDetalles guardarOrden(const OrdenServicio& orden);
+ResultadoArchivoDetalles agregarOrden(OrdenServicio& orden);
+ResultadoArchivoDetalles existeOrdenPorVehiculo(
+    int idVehiculo, bool soloAbiertas, bool& existe);
 ResultadoArchivoDetalles calcularTotalOrden(const OrdenServicio* orden, float& total);
 void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden);
-void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad);
+void mostrarListaOrdenes(SistemaTaller* s, int tipoFiltro, const char* estado, int idVehiculo);
 
 bool fechaValida(const char* fecha);
 void obtenerFechaActual(char* fecha, size_t capacidad);
@@ -932,6 +871,7 @@ bool cedulaValida(const char* cedula);
 bool confirmarAccion(const char* mensaje);
 bool esCancelar(const char* texto);
 bool contieneSinMayusculas(const char* texto, const char* fragmento);
+bool igualSinMayusculas(const char* a, const char* b);
 
 bool leerTexto(const char* mensaje, char* valor, size_t capacidad) {
     return Validaciones::leerTexto(mensaje, valor, capacidad) == ResultadoEntrada::Correcto;
@@ -952,33 +892,6 @@ void mostrarOpcionVolver() {
 //SISTEMA GENERAL 
 void inicializarSistema(SistemaTaller &s, Taller infoTaller) {
     s.taller = infoTaller;
-
-    s.capacidadVehiculos = 4;
-    s.capacidadRepuestos = 4;
-    s.capacidadMecanicos = 4;
-    s.capacidadOrdenes = 4;
-
-    s.vehiculos = new Vehiculo[s.capacidadVehiculos];
-    s.repuestos = new Repuesto[s.capacidadRepuestos];
-    s.mecanicos = new Mecanico[s.capacidadMecanicos];
-    s.ordenes = new OrdenServicio[s.capacidadOrdenes];
-
-    s.numVehiculos = 0;
-    s.numRepuestos = 0;
-    s.numMecanicos = 0;
-    s.numOrdenes = 0;
-
-    s.siguienteIdMecanicos = 1;
-    s.siguienteIdOrdenes = 1;
-    s.siguienteIdRepuestos = 1;
-    s.siguienteIdVehiculos = 1;
-}
-
-void liberarSistema(SistemaTaller &s) {
-    delete[] s.vehiculos;
-    delete[] s.repuestos;
-    delete[] s.mecanicos;
-    delete[] s.ordenes; 
 }
 
 bool cedulaValida(const char* cedula) {
@@ -1030,6 +943,227 @@ bool cadenaTerminada(const char* texto, size_t capacidad) {
     return texto != nullptr && memchr(texto, '\0', capacidad) != nullptr;
 }
 
+ResultadoArchivoDetalles leerHeaderOrdenes(ArchivoHeader& header) {
+    std::ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (header.cantidadRegistros < 0 ||
+        header.cantidadRegistros == numeric_limits<int>::max() ||
+        header.proximoID != header.cantidadRegistros + 1 ||
+        header.registrosActivos < 0 ||
+        header.registrosActivos > header.cantidadRegistros ||
+        header.version != VERSION_ARCHIVO) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
+    }
+
+    archivo.seekg(0, ios::end);
+    const streamoff tamEsperado =
+        static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) *
+            static_cast<streamoff>(sizeof(OrdenServicio));
+    if (!archivo || archivo.tellg() != tamEsperado) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles buscarOrdenPorID(
+    int id, OrdenServicio& orden, bool incluirEliminado) {
+    if (id < 1) return ResultadoArchivoDetalles::IdInvalido;
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderOrdenes(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (id > header.cantidadRegistros) return ResultadoArchivoDetalles::RegistroNoEncontrado;
+
+    const streamoff posicion =
+        static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(OrdenServicio));
+    std::ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&orden), sizeof(OrdenServicio));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (orden.id != id ||
+        !cadenaTerminada(orden.fechaApertura, sizeof(orden.fechaApertura)) ||
+        !cadenaTerminada(orden.fechaCierre, sizeof(orden.fechaCierre)) ||
+        !cadenaTerminada(orden.estado, sizeof(orden.estado)) ||
+        !cadenaTerminada(orden.descripcionFalla, sizeof(orden.descripcionFalla))) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+    if (orden.eliminado && !incluirEliminado) {
+        return ResultadoArchivoDetalles::RegistroNoEncontrado;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles guardarOrden(const OrdenServicio& orden) {
+    if (orden.id < 1 ||
+        !cadenaTerminada(orden.fechaApertura, sizeof(orden.fechaApertura)) ||
+        !cadenaTerminada(orden.fechaCierre, sizeof(orden.fechaCierre)) ||
+        !cadenaTerminada(orden.estado, sizeof(orden.estado)) ||
+        !cadenaTerminada(orden.descripcionFalla, sizeof(orden.descripcionFalla))) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderOrdenes(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (orden.id > header.cantidadRegistros) return ResultadoArchivoDetalles::IdInvalido;
+
+    const streamoff posicion =
+        static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(orden.id - 1) * static_cast<streamoff>(sizeof(OrdenServicio));
+    std::fstream archivo(ARCHIVO_ORDENES, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+
+    OrdenServicio existente;
+    archivo.read(reinterpret_cast<char*>(&existente), sizeof(OrdenServicio));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (existente.id != orden.id) return ResultadoArchivoDetalles::RegistroInconsistente;
+
+    OrdenServicio actualizado = orden;
+    actualizado.fechaCreacion = existente.fechaCreacion;
+    actualizado.fechaUltimaModificacion = time(nullptr);
+    bool actualizarHeader = false;
+    if (!existente.eliminado && actualizado.eliminado) {
+        if (header.registrosActivos == 0) return ResultadoArchivoDetalles::EncabezadoInvalido;
+        --header.registrosActivos;
+        actualizarHeader = true;
+    } else if (existente.eliminado && !actualizado.eliminado) {
+        if (header.registrosActivos >= header.cantidadRegistros) {
+            return ResultadoArchivoDetalles::EncabezadoInvalido;
+        }
+        ++header.registrosActivos;
+        actualizarHeader = true;
+    }
+
+    archivo.clear();
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&actualizado), sizeof(OrdenServicio));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    if (actualizarHeader) {
+        archivo.seekp(0, ios::beg);
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+        archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles agregarOrden(OrdenServicio& orden) {
+    if (!cadenaTerminada(orden.fechaApertura, sizeof(orden.fechaApertura)) ||
+        !cadenaTerminada(orden.fechaCierre, sizeof(orden.fechaCierre)) ||
+        !cadenaTerminada(orden.estado, sizeof(orden.estado)) ||
+        !cadenaTerminada(orden.descripcionFalla, sizeof(orden.descripcionFalla)) ||
+        orden.idVehiculo < 1 || orden.idMecanico < 1 ||
+        orden.kilometrajeIngreso < 0 || orden.manoObra < 0.0f) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderOrdenes(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (header.proximoID == numeric_limits<int>::max()) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
+    }
+
+    const streamoff posicionFinalEsperada =
+        static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) *
+            static_cast<streamoff>(sizeof(OrdenServicio));
+    std::fstream archivo(ARCHIVO_ORDENES, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekp(0, ios::end);
+    if (!archivo || archivo.tellp() != posicionFinalEsperada) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+
+    orden.id = header.proximoID;
+    orden.eliminado = false;
+    orden.fechaCreacion = time(nullptr);
+    orden.fechaUltimaModificacion = orden.fechaCreacion;
+    archivo.write(reinterpret_cast<const char*>(&orden), sizeof(OrdenServicio));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.close();
+    if (archivo.fail()) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    ++header.cantidadRegistros;
+    ++header.registrosActivos;
+    ++header.proximoID;
+    std::fstream archivoHeader(ARCHIVO_ORDENES, ios::in | ios::out | ios::binary);
+    if (!archivoHeader.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivoHeader.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+    return archivoHeader ? ResultadoArchivoDetalles::Correcto
+                         : ResultadoArchivoDetalles::ErrorEscritura;
+}
+
+ResultadoArchivoDetalles existeOrdenPorVehiculo(
+    int idVehiculo, bool soloAbiertas, bool& existe) {
+    existe = false;
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderOrdenes(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    std::ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    for (int indice = 0; indice < header.cantidadRegistros; ++indice) {
+        OrdenServicio orden;
+        archivo.read(reinterpret_cast<char*>(&orden), sizeof(OrdenServicio));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+        if (orden.id != indice + 1 ||
+            !cadenaTerminada(orden.estado, sizeof(orden.estado))) {
+            return ResultadoArchivoDetalles::RegistroInconsistente;
+        }
+        if (!orden.eliminado && orden.idVehiculo == idVehiculo &&
+            (!soloAbiertas || igualSinMayusculas(orden.estado, "Abierta"))) {
+            existe = true;
+            return ResultadoArchivoDetalles::Correcto;
+        }
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles contarOrdenesAbiertasMecanico(
+    int idMecanico, int& cantidad) {
+    cantidad = 0;
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderOrdenes(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    std::ifstream archivo(ARCHIVO_ORDENES, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    for (int indice = 0; indice < header.cantidadRegistros; ++indice) {
+        OrdenServicio orden;
+        archivo.read(reinterpret_cast<char*>(&orden), sizeof(OrdenServicio));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+        if (orden.id != indice + 1 ||
+            !cadenaTerminada(orden.estado, sizeof(orden.estado))) {
+            return ResultadoArchivoDetalles::RegistroInconsistente;
+        }
+        if (!orden.eliminado && orden.idMecanico == idMecanico &&
+            igualSinMayusculas(orden.estado, "Abierta")) {
+            ++cantidad;
+        }
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
 bool textoNoVacio(const char* texto) {
     return Validaciones::textoNoVacio(texto);
 }
@@ -1047,19 +1181,172 @@ bool igualSinMayusculas(const char* a, const char* b) {
 }
 
 //SISTEMA DE VEHICULOS 
-void redimensionarVehiculos(SistemaTaller* s) {
-    s->capacidadVehiculos *= 2; 
-    Vehiculo* nuevosVehiculos = new Vehiculo[s->capacidadVehiculos];
+ResultadoArchivoDetalles leerHeaderVehiculos(ArchivoHeader& header) {
+    std::ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
 
-    for (int i = 0; i < s->numVehiculos; i++) {
-        nuevosVehiculos[i] = s->vehiculos[i];
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (header.cantidadRegistros < 0 ||
+        header.cantidadRegistros == numeric_limits<int>::max() ||
+        header.proximoID != header.cantidadRegistros + 1 ||
+        header.registrosActivos < 0 ||
+        header.registrosActivos > header.cantidadRegistros ||
+        header.version != VERSION_ARCHIVO) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
     }
 
-    delete[] s->vehiculos;
-    s->vehiculos = nuevosVehiculos;
+    archivo.seekg(0, ios::end);
+    const streamoff tamEsperado = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) * static_cast<streamoff>(sizeof(Vehiculo));
+    if (!archivo || archivo.tellg() != tamEsperado) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+    return ResultadoArchivoDetalles::Correcto;
 }
 
-bool datosVehiculoValidos(SistemaTaller* s, const Vehiculo& datos, int idIgnorado) {
+ResultadoArchivoDetalles buscarVehiculoPorID(
+    int id, Vehiculo& vehiculo, bool incluirEliminado, streamoff* posicionLeida) {
+    if (id < 1) return ResultadoArchivoDetalles::IdInvalido;
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderVehiculos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (id > header.cantidadRegistros) return ResultadoArchivoDetalles::RegistroNoEncontrado;
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Vehiculo));
+    if (posicionLeida != nullptr) *posicionLeida = posicion;
+    std::ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&vehiculo), sizeof(Vehiculo));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (vehiculo.id != id) return ResultadoArchivoDetalles::RegistroInconsistente;
+    if (vehiculo.eliminado && !incluirEliminado) {
+        return ResultadoArchivoDetalles::RegistroNoEncontrado;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles buscarVehiculoPorPlaca(
+    const char* placa, Vehiculo& vehiculo, bool incluirEliminado) {
+    if (placa == nullptr || placa[0] == '\0') {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderVehiculos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    std::ifstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+
+    for (int indice = 0; indice < header.cantidadRegistros; ++indice) {
+        Vehiculo actual;
+        archivo.read(reinterpret_cast<char*>(&actual), sizeof(Vehiculo));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+        if (actual.id != indice + 1) return ResultadoArchivoDetalles::RegistroInconsistente;
+        if (igualSinMayusculas(actual.placa, placa) &&
+            (incluirEliminado || !actual.eliminado)) {
+            vehiculo = actual;
+            return ResultadoArchivoDetalles::Correcto;
+        }
+    }
+    return ResultadoArchivoDetalles::RegistroNoEncontrado;
+}
+
+ResultadoArchivoDetalles guardarVehiculo(const Vehiculo& vehiculo) {
+    if (vehiculo.id < 1) return ResultadoArchivoDetalles::IdInvalido;
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderVehiculos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (vehiculo.id > header.cantidadRegistros) return ResultadoArchivoDetalles::IdInvalido;
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(vehiculo.id - 1) * static_cast<streamoff>(sizeof(Vehiculo));
+    std::fstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+
+    Vehiculo existente;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&existente), sizeof(Vehiculo));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (existente.id != vehiculo.id) return ResultadoArchivoDetalles::RegistroInconsistente;
+
+    Vehiculo actualizado = vehiculo;
+    actualizado.fechaCreacion = existente.fechaCreacion;
+    actualizado.fechaUltimaModificacion = time(nullptr);
+    if (!existente.eliminado && actualizado.eliminado) {
+        if (header.registrosActivos == 0) return ResultadoArchivoDetalles::EncabezadoInvalido;
+        --header.registrosActivos;
+    } else if (existente.eliminado && !actualizado.eliminado) {
+        if (header.registrosActivos >= header.cantidadRegistros) {
+            return ResultadoArchivoDetalles::EncabezadoInvalido;
+        }
+        ++header.registrosActivos;
+    }
+
+    archivo.clear();
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&actualizado), sizeof(Vehiculo));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    if (existente.eliminado != actualizado.eliminado) {
+        archivo.seekp(0, ios::beg);
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+        archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles agregarVehiculoArchivo(Vehiculo& vehiculo) {
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderVehiculos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (header.proximoID == numeric_limits<int>::max()) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
+    }
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) * static_cast<streamoff>(sizeof(Vehiculo));
+    std::fstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekp(0, ios::end);
+    if (!archivo || archivo.tellp() != posicion) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+
+    vehiculo.id = header.proximoID;
+    vehiculo.eliminado = false;
+    vehiculo.fechaCreacion = time(nullptr);
+    vehiculo.fechaUltimaModificacion = vehiculo.fechaCreacion;
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&vehiculo), sizeof(Vehiculo));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    ++header.cantidadRegistros;
+    ++header.registrosActivos;
+    ++header.proximoID;
+    archivo.seekp(0, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+    return archivo ? ResultadoArchivoDetalles::Correcto : ResultadoArchivoDetalles::ErrorEscritura;
+}
+
+bool datosVehiculoValidos(const Vehiculo& datos, int idIgnorado) {
     if (!cadenaTerminada(datos.placa, sizeof(datos.placa)) ||
         !cadenaTerminada(datos.marca, sizeof(datos.marca)) ||
         !cadenaTerminada(datos.modelo, sizeof(datos.modelo)) ||
@@ -1072,15 +1359,14 @@ bool datosVehiculoValidos(SistemaTaller* s, const Vehiculo& datos, int idIgnorad
         !cedulaValida(datos.cedulaPropietario) ||
         !telefonoValido(datos.telefonoPropietario)) return false;
 
-    for (int i = 0; i < s->numVehiculos; ++i) {
-        if (s->vehiculos[i].id != idIgnorado &&
-            igualSinMayusculas(s->vehiculos[i].placa, datos.placa)) return false;
-    }
-    return true;
+    Vehiculo existente;
+    ResultadoArchivoDetalles busqueda = buscarVehiculoPorPlaca(datos.placa, existente);
+    if (busqueda == ResultadoArchivoDetalles::RegistroNoEncontrado) return true;
+    return busqueda == ResultadoArchivoDetalles::Correcto &&
+        existente.id == idIgnorado;
 }
 
-bool capturarDatosVehiculo(SistemaTaller* s, Vehiculo& datos, int idIgnorado,
-                           int kilometrajeMinimo) {
+bool capturarDatosVehiculo(Vehiculo& datos, int idIgnorado, int kilometrajeMinimo) {
     int campo = 0;
     while (campo < 8) {
         ResultadoEntrada resultado;
@@ -1093,9 +1379,16 @@ bool capturarDatosVehiculo(SistemaTaller* s, Vehiculo& datos, int idIgnorado,
                         cout << "[!] La placa debe tener 6 o 7 caracteres alfanumericos." << endl;
                         resultado = ResultadoEntrada::Reintentar;
                     } else {
-                        Vehiculo* existente = buscarVehiculoPorPlaca(s, datos.placa);
-                        if (existente != nullptr && existente->id != idIgnorado) {
+                        Vehiculo existente;
+                        ResultadoArchivoDetalles busqueda =
+                            buscarVehiculoPorPlaca(datos.placa, existente);
+                        if (busqueda == ResultadoArchivoDetalles::Correcto &&
+                            existente.id != idIgnorado) {
                             cout << "[!] Esa placa ya esta registrada." << endl;
+                            resultado = ResultadoEntrada::Reintentar;
+                        } else if (busqueda != ResultadoArchivoDetalles::Correcto &&
+                                   busqueda != ResultadoArchivoDetalles::RegistroNoEncontrado) {
+                            cout << "[!] No se pudo consultar vehiculos.bin." << endl;
                             resultado = ResultadoEntrada::Reintentar;
                         } else {
                             Validaciones::convertirAMayusculas(datos.placa);
@@ -1150,182 +1443,83 @@ bool capturarDatosVehiculo(SistemaTaller* s, Vehiculo& datos, int idIgnorado,
     return true;
 }
 
-Vehiculo* agregarVehiculo(SistemaTaller* s, Vehiculo datos) {
-    if (!datosVehiculoValidos(s, datos, -1)) return nullptr;
+ResultadoArchivoDetalles agregarVehiculo(Vehiculo& datos) {
+    if (!datosVehiculoValidos(datos, -1)) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
     for (size_t i = 0; datos.placa[i] != '\0'; ++i)
         datos.placa[i] = static_cast<char>(toupper(static_cast<unsigned char>(datos.placa[i])));
     if (datos.cedulaPropietario[0] == 'v' || datos.cedulaPropietario[0] == 'e')
         datos.cedulaPropietario[0] = static_cast<char>(toupper(static_cast<unsigned char>(datos.cedulaPropietario[0])));
     if (datos.fechaRegistro[0] == '\0') obtenerFechaActual(datos.fechaRegistro, sizeof(datos.fechaRegistro));
-    if (s->numVehiculos >= s->capacidadVehiculos) {
-        redimensionarVehiculos(s);
-    }
-
-    datos.id = s->siguienteIdVehiculos++;
-    s->vehiculos[s->numVehiculos] = datos;
-    s->numVehiculos++;
-
-    return &(s->vehiculos[s->numVehiculos - 1]);
-}
-
-Vehiculo* buscarVehiculoPorID(SistemaTaller* s, int id) {
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (s->vehiculos[i].id == id) {
-            return &(s->vehiculos[i]);
-        }
-    }
-    return nullptr;
-}
-
-Vehiculo* buscarVehiculoPorPlaca(SistemaTaller* s, const char* placa){
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (igualSinMayusculas(s->vehiculos[i].placa, placa)) {
-            return &(s->vehiculos[i]);
-        }
-    }
-    return nullptr;
-}
-
-Vehiculo** buscarVehiculosPorPropietario(SistemaTaller* s, const char* subcadena, int* cantidad) {
-    int encontrados = 0;
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (contieneSinMayusculas(s->vehiculos[i].nombrePropietario, subcadena)) {
-            encontrados++;
-        }
-    }
-    *cantidad = encontrados;
-    if (encontrados == 0) return nullptr;
-
-    Vehiculo** lista = new Vehiculo*[encontrados];
-    int j = 0;
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (contieneSinMayusculas(s->vehiculos[i].nombrePropietario, subcadena)) {
-            lista[j++] = &(s->vehiculos[i]);
-        }
-    }
-    return lista;
-}
-
-Vehiculo** listarVehiculos(SistemaTaller* s, int* cantidad) {
-    int activos = 0;
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (!s->vehiculos[i].eliminado) activos++;
-    }
-    *cantidad = activos;
-    if (activos == 0) return nullptr;
-
-    Vehiculo** lista = new Vehiculo*[activos];
-    int j = 0;
-    for (int i = 0; i < s->numVehiculos; i++) {
-        if (!s->vehiculos[i].eliminado) {
-            lista[j++] = &(s->vehiculos[i]);
-        }
-    }
-    return lista;
+    return agregarVehiculoArchivo(datos);
 }
 
 bool actualizarVehiculo(SistemaTaller* s, int id, Vehiculo datos) {
-    Vehiculo* v = buscarVehiculoPorID(s, id);
-    if (v == nullptr || !datosVehiculoValidos(s, datos, id) ||
-        datos.kilometraje < v->kilometraje) return false;
+    (void)s;
+    Vehiculo existente;
+    if (buscarVehiculoPorID(id, existente) != ResultadoArchivoDetalles::Correcto ||
+        !datosVehiculoValidos(datos, id) ||
+        datos.kilometraje < existente.kilometraje) return false;
 
     for (size_t i = 0; datos.placa[i] != '\0'; ++i)
         datos.placa[i] = static_cast<char>(toupper(static_cast<unsigned char>(datos.placa[i])));
-    strcpy(v->placa, datos.placa);
-    strcpy(v->marca, datos.marca);
-    strcpy(v->modelo, datos.modelo);
-    v->anio = datos.anio;
-    v->kilometraje = datos.kilometraje;
-    strcpy(v->nombrePropietario, datos.nombrePropietario);
-    strcpy(v->cedulaPropietario, datos.cedulaPropietario);
-    if (v->cedulaPropietario[0] == 'v' || v->cedulaPropietario[0] == 'e')
-        v->cedulaPropietario[0] = static_cast<char>(toupper(static_cast<unsigned char>(v->cedulaPropietario[0])));
-    strcpy(v->telefonoPropietario, datos.telefonoPropietario);
-    return true;
+    if (datos.cedulaPropietario[0] == 'v' || datos.cedulaPropietario[0] == 'e')
+        datos.cedulaPropietario[0] = static_cast<char>(toupper(static_cast<unsigned char>(datos.cedulaPropietario[0])));
+    datos.id = existente.id;
+    datos.eliminado = existente.eliminado;
+    memcpy(datos.fechaRegistro, existente.fechaRegistro, sizeof(datos.fechaRegistro));
+    datos.fechaCreacion = existente.fechaCreacion;
+    return guardarVehiculo(datos) == ResultadoArchivoDetalles::Correcto;
 }
 
 bool eliminarVehiculo(SistemaTaller* s, int id) {
-    Vehiculo* v = buscarVehiculoPorID(s, id);
-    if (v == nullptr || v->eliminado) return false;
+    (void)s;
+    Vehiculo vehiculo;
+    if (buscarVehiculoPorID(id, vehiculo) != ResultadoArchivoDetalles::Correcto) return false;
 
-    for (int i = 0; i < s->numOrdenes; ++i) {
-        if (s->ordenes[i].idVehiculo == id) return false;
-    }
+    bool existeOrden = false;
+    if (existeOrdenPorVehiculo(id, false, existeOrden) !=
+            ResultadoArchivoDetalles::Correcto ||
+        existeOrden) return false;
 
-    v->eliminado = true;
-    v->fechaUltimaModificacion = time(nullptr);
-
-    const streamoff posicion = 
-        static_cast<streamoff>(sizeof(ArchivoHeader)) +
-        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Vehiculo));
-
-    std::fstream archivo(ARCHIVO_VEHICULOS, ios::in | ios::out | ios::binary);
-    if (!archivo.is_open()) return false;
-
-    archivo.seekp(posicion, ios::beg);
-    if (!archivo) {
-        archivo.close();
-        return false;
-    }
-    archivo.write(reinterpret_cast<const char*>(v), sizeof(Vehiculo));
-    archivo.close();
-
-    ArchivoHeader header;
-    std::ifstream lector(ARCHIVO_VEHICULOS, ios::in | ios::binary);
-    if (lector.is_open()) {
-        lector.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-        lector.close();
-    }
-
-    if (header.registrosActivos > 0) {
-        header.registrosActivos--;
-        std::fstream escritor(ARCHIVO_VEHICULOS, ios::in | ios::out | ios::binary);
-        if (escritor.is_open()) {
-            escritor.seekp(0, ios::beg);
-            escritor.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
-            escritor.close();
-        }
-    }
-
-    return true;
+    vehiculo.eliminado = true;
+    return guardarVehiculo(vehiculo) == ResultadoArchivoDetalles::Correcto;
 }
 
-void mostrarVehiculo(Vehiculo* vehiculo) {
-    if (vehiculo == nullptr) {
-        cout << "[!] Vehiculo no encontrado." << endl;
-        return;
-    }
-
+void mostrarVehiculo(const Vehiculo& vehiculo) {
     cout << "\n--- DETALLE DEL VEHICULO ---" << endl;
-    cout << "ID: " << vehiculo->id << endl;
-    cout << "Placa: " << vehiculo->placa << endl;
-    cout << "Marca: " << vehiculo->marca << endl;
-    cout << "Modelo: " << vehiculo->modelo << endl;
-    cout << "Anio: " << vehiculo->anio << endl;
-    cout << "Kilometraje: " << vehiculo->kilometraje << endl;
-    cout << "Fecha de registro: " << vehiculo->fechaRegistro << endl;
-    cout << "Propietario: " << vehiculo->nombrePropietario << endl;
-    cout << "Cedula del propietario: " << vehiculo->cedulaPropietario << endl;
-    cout << "Telefono del propietario: " << vehiculo->telefonoPropietario << endl;
+    cout << "ID: " << vehiculo.id << endl;
+    cout << "Placa: " << vehiculo.placa << endl;
+    cout << "Marca: " << vehiculo.marca << endl;
+    cout << "Modelo: " << vehiculo.modelo << endl;
+    cout << "Anio: " << vehiculo.anio << endl;
+    cout << "Kilometraje: " << vehiculo.kilometraje << endl;
+    cout << "Fecha de registro: " << vehiculo.fechaRegistro << endl;
+    cout << "Propietario: " << vehiculo.nombrePropietario << endl;
+    cout << "Cedula del propietario: " << vehiculo.cedulaPropietario << endl;
+    cout << "Telefono del propietario: " << vehiculo.telefonoPropietario << endl;
 }
 
 void menuRegistrarVehiculo(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     Vehiculo nuevo = {};
     cout << "\n--- REGISTRAR VEHICULO ---" << endl;
     mostrarOpcionVolver();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    if (!capturarDatosVehiculo(s, nuevo, -1, 0)) return;
+    if (!capturarDatosVehiculo(nuevo, -1, 0)) return;
     if (!confirmarAccion("Guardar vehiculo")) return;
-    Vehiculo* creado = agregarVehiculo(s, nuevo);
-    if (creado == nullptr) {
-        cout << "[!] No se pudo registrar el vehiculo; revise sus datos." << endl;
+    ResultadoArchivoDetalles resultado = agregarVehiculo(nuevo);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo registrar el vehiculo (" << static_cast<int>(resultado) << ")." << endl;
         return;
     }
-    cout << "[OK] Vehiculo registrado con ID " << creado->id << "." << endl;
+    cout << "[OK] Vehiculo registrado con ID " << nuevo.id << "." << endl;
 }
 
 void menuBuscarVehiculo(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     int opcion = 0;
     cout << "\n--- BUSCAR VEHICULO ---\n1. Por ID\n2. Por placa\n3. Por propietario\n";
@@ -1342,22 +1536,70 @@ void menuBuscarVehiculo(SistemaTaller* s) {
                 resultado = Validaciones::leerEnteroRango(
                     "ID: ", 1, numeric_limits<int>::max(), id);
                 if (resultado == ResultadoEntrada::Correcto) {
-                    mostrarVehiculo(buscarVehiculoPorID(s, id));
+                    Vehiculo vehiculo;
+                    streamoff posicionLeida = 0;
+                    ResultadoArchivoDetalles lectura =
+                        buscarVehiculoPorID(id, vehiculo, true, &posicionLeida);
+                    if (lectura == ResultadoArchivoDetalles::Correcto) {
+                        cout << "[DEBUG] Registro leido en el byte " << posicionLeida
+                             << " de vehiculos.bin." << endl;
+                        if (vehiculo.eliminado) {
+                            cout << "[!] El vehiculo ID " << id << " fue eliminado." << endl;
+                        } else {
+                            mostrarVehiculo(vehiculo);
+                        }
+                    } else if (lectura == ResultadoArchivoDetalles::RegistroNoEncontrado) {
+                        cout << "[!] No existe un vehiculo con el ID " << id << "." << endl;
+                    } else {
+                        cout << "[!] No se pudo leer vehiculos.bin." << endl;
+                    }
                 }
             } else if (opcion == 2) {
                 char placa[10] = {};
                 resultado = Validaciones::leerTexto("Placa: ", placa, sizeof(placa));
                 if (resultado == ResultadoEntrada::Correcto) {
-                    mostrarVehiculo(buscarVehiculoPorPlaca(s, placa));
+                    Vehiculo vehiculo;
+                    ResultadoArchivoDetalles lectura = buscarVehiculoPorPlaca(placa, vehiculo);
+                    if (lectura == ResultadoArchivoDetalles::Correcto) {
+                        mostrarVehiculo(vehiculo);
+                    } else {
+                        cout << "[!] Vehiculo no encontrado o no se pudo leer el archivo." << endl;
+                    }
                 }
             } else {
                 char nombre[100] = {};
                 resultado = Validaciones::leerTexto("Nombre o fragmento: ", nombre, sizeof(nombre));
                 if (resultado == ResultadoEntrada::Correcto) {
                     int cantidad = 0;
-                    Vehiculo** lista = buscarVehiculosPorPropietario(s, nombre, &cantidad);
-                    mostrarListaVehiculos(lista, cantidad);
-                    delete[] lista;
+                    bool hayMas = false;
+                    Vehiculo encontrados[MAX_RESULTADOS_POR_CONSULTA];
+                    ArchivoHeader header;
+                    ResultadoArchivoDetalles lectura = leerHeaderVehiculos(header);
+                    if (lectura == ResultadoArchivoDetalles::Correcto) {
+                        LectorRegistrosArchivo<Vehiculo> lector;
+                        lectura = lector.abrir(ARCHIVO_VEHICULOS, header);
+                        for (int i = 0; lectura == ResultadoArchivoDetalles::Correcto &&
+                             i < header.cantidadRegistros; ++i) {
+                            Vehiculo actual;
+                            lectura = lector.siguiente(actual);
+                            if (lectura != ResultadoArchivoDetalles::Correcto) break;
+                            if (!actual.eliminado &&
+                                contieneSinMayusculas(actual.nombrePropietario, nombre)) {
+                                if (cantidad == MAX_RESULTADOS_POR_CONSULTA) {
+                                    hayMas = true;
+                                    break;
+                                }
+                                encontrados[cantidad++] = actual;
+                            }
+                        }
+                    }
+                    if (lectura == ResultadoArchivoDetalles::Correcto) {
+                        if (cantidad == 0) cout << "[!] No se encontraron vehiculos." << endl;
+                        for (int i = 0; i < cantidad; ++i) mostrarVehiculo(encontrados[i]);
+                        if (hayMas) cout << "[!] Se muestran los primeros " << cantidad << " resultados." << endl;
+                    } else {
+                        cout << "[!] No se pudo completar la busqueda en vehiculos.bin." << endl;
+                    }
                 }
             }
         }
@@ -1375,13 +1617,13 @@ void menuActualizarVehiculo(SistemaTaller* s) {
         "Ingrese el ID del vehiculo a actualizar: ", 1, numeric_limits<int>::max(), id);
     if (resultado != ResultadoEntrada::Correcto) return;
 
-    Vehiculo* vExistente = buscarVehiculoPorID(s, id);
-    if (vExistente == nullptr) {
+    Vehiculo existente;
+    if (buscarVehiculoPorID(id, existente) != ResultadoArchivoDetalles::Correcto) {
         cout << "[!] No se encontro un vehiculo con el ID " << id << endl;
         return;
     }
     Vehiculo datosNuevos = {};
-    if (!capturarDatosVehiculo(s, datosNuevos, id, vExistente->kilometraje)) return;
+    if (!capturarDatosVehiculo(datosNuevos, id, existente.kilometraje)) return;
 
     if (!confirmarAccion("Guardar cambios del vehiculo")) return;
     if (actualizarVehiculo(s, id, datosNuevos)) {
@@ -1405,102 +1647,237 @@ void menuEliminarVehiculo(SistemaTaller* s) {
 }
 
 void menuListarVehiculos(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
-    int cantidad = 0;
-    Vehiculo** lista = listarVehiculos(s, &cantidad);
-    mostrarListaVehiculos(lista, cantidad);
-    delete[] lista;
-    pausarParaContinuar();
-}
-
-void mostrarListaVehiculos(Vehiculo** vehiculos, int cantidad) {
-    if (vehiculos == nullptr || cantidad == 0) {
-        cout << "\n[!] No hay vehiculos registrados para mostrar." << endl;
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderVehiculos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer vehiculos.bin." << endl;
+        pausarParaContinuar();
         return;
     }
 
-    cout << "\n=== LISTA DE VEHICULOS (" << cantidad << ") ===" << endl;
-    for (int i = 0; i < cantidad; i++) {
-        cout << "ID: " << vehiculos[i]->id
-             << " | Placa: " << vehiculos[i]->placa
-             << " | Marca: " << vehiculos[i]->marca
-             << " | Modelo: " << vehiculos[i]->modelo
-             << " | Propietario: " << vehiculos[i]->nombrePropietario << endl;
+    cout << "\n=== LISTA DE VEHICULOS (" << header.registrosActivos << ") ===" << endl;
+    LectorRegistrosArchivo<Vehiculo> lector;
+    resultado = lector.abrir(ARCHIVO_VEHICULOS, header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer vehiculos.bin." << endl;
+        pausarParaContinuar();
+        return;
     }
+    for (int i = 0; i < header.cantidadRegistros; ++i) {
+        Vehiculo vehiculo;
+        resultado = lector.siguiente(vehiculo);
+        if (resultado != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de vehiculos.bin." << endl;
+            break;
+        }
+        if (!vehiculo.eliminado) {
+            cout << "ID: " << vehiculo.id
+                 << " | Placa: " << vehiculo.placa
+                 << " | Marca: " << vehiculo.marca
+                 << " | Modelo: " << vehiculo.modelo
+                 << " | Propietario: " << vehiculo.nombrePropietario << endl;
+        }
+    }
+    pausarParaContinuar();
 }
 
-// SISTEMA DE MECANICOS 
-void redimensionarMecanicos(SistemaTaller* s) {
-    s->capacidadMecanicos *= 2; 
-    Mecanico* nuevosMecanicos = new Mecanico[s->capacidadMecanicos];
+// SISTEMA DE MECANICOS
+ResultadoArchivoDetalles leerHeaderMecanicos(ArchivoHeader& header) {
+    std::ifstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
 
-    for (int i = 0; i < s->numMecanicos; i++) {
-        nuevosMecanicos[i] = s->mecanicos[i];
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (header.cantidadRegistros < 0 ||
+        header.cantidadRegistros == numeric_limits<int>::max() ||
+        header.proximoID != header.cantidadRegistros + 1 ||
+        header.registrosActivos < 0 ||
+        header.registrosActivos > header.cantidadRegistros ||
+        header.version != VERSION_ARCHIVO) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
     }
 
-    delete[] s->mecanicos;
-    s->mecanicos = nuevosMecanicos;
+    archivo.seekg(0, ios::end);
+    const streamoff tamEsperado = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) * static_cast<streamoff>(sizeof(Mecanico));
+    if (!archivo || archivo.tellg() != tamEsperado) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+    return ResultadoArchivoDetalles::Correcto;
 }
 
-Mecanico* agregarMecanico(SistemaTaller* s, Mecanico datos) {
-    Validaciones::convertirAMayusculas(datos.cedula);
-    Validaciones::convertirAMayusculas(datos.especialidad);
+ResultadoArchivoDetalles buscarMecanicoPorID(
+    int id, Mecanico& mecanico, bool incluirEliminado = false) {
+    if (id < 1) return ResultadoArchivoDetalles::IdInvalido;
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderMecanicos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (id > header.cantidadRegistros) return ResultadoArchivoDetalles::RegistroNoEncontrado;
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Mecanico));
+    std::ifstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&mecanico), sizeof(Mecanico));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (mecanico.id != id) return ResultadoArchivoDetalles::RegistroInconsistente;
+    if (mecanico.eliminado && !incluirEliminado) {
+        return ResultadoArchivoDetalles::RegistroNoEncontrado;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles buscarMecanicoPorCedula(
+    const char* cedula, Mecanico& mecanico, bool incluirEliminado = true) {
+    if (cedula == nullptr || cedula[0] == '\0') {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderMecanicos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    std::ifstream archivo(ARCHIVO_MECANICOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+
+    for (int indice = 0; indice < header.cantidadRegistros; ++indice) {
+        Mecanico actual;
+        archivo.read(reinterpret_cast<char*>(&actual), sizeof(Mecanico));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+        if (actual.id != indice + 1) return ResultadoArchivoDetalles::RegistroInconsistente;
+        if (igualSinMayusculas(actual.cedula, cedula) &&
+            (incluirEliminado || !actual.eliminado)) {
+            mecanico = actual;
+            return ResultadoArchivoDetalles::Correcto;
+        }
+    }
+    return ResultadoArchivoDetalles::RegistroNoEncontrado;
+}
+
+ResultadoArchivoDetalles guardarMecanico(const Mecanico& mecanico) {
+    if (mecanico.id < 1) return ResultadoArchivoDetalles::IdInvalido;
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderMecanicos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (mecanico.id > header.cantidadRegistros) return ResultadoArchivoDetalles::IdInvalido;
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(mecanico.id - 1) * static_cast<streamoff>(sizeof(Mecanico));
+    std::fstream archivo(ARCHIVO_MECANICOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+
+    Mecanico existente;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&existente), sizeof(Mecanico));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (existente.id != mecanico.id) return ResultadoArchivoDetalles::RegistroInconsistente;
+
+    Mecanico actualizado = mecanico;
+    actualizado.fechaCreacion = existente.fechaCreacion;
+    actualizado.fechaUltimaModificacion = time(nullptr);
+    if (!existente.eliminado && actualizado.eliminado) {
+        if (header.registrosActivos == 0) return ResultadoArchivoDetalles::EncabezadoInvalido;
+        --header.registrosActivos;
+    } else if (existente.eliminado && !actualizado.eliminado) {
+        if (header.registrosActivos >= header.cantidadRegistros) {
+            return ResultadoArchivoDetalles::EncabezadoInvalido;
+        }
+        ++header.registrosActivos;
+    }
+
+    archivo.clear();
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&actualizado), sizeof(Mecanico));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    if (existente.eliminado != actualizado.eliminado) {
+        archivo.seekp(0, ios::beg);
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+        archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles agregarMecanico(Mecanico& mecanico) {
+    if (!cadenaTerminada(mecanico.nombre, sizeof(mecanico.nombre)) ||
+        !cadenaTerminada(mecanico.cedula, sizeof(mecanico.cedula)) ||
+        !cadenaTerminada(mecanico.especialidad, sizeof(mecanico.especialidad)) ||
+        !textoNoVacio(mecanico.nombre) || !cedulaValida(mecanico.cedula)) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    Validaciones::convertirAMayusculas(mecanico.cedula);
+    Validaciones::convertirAMayusculas(mecanico.especialidad);
     const char* especialidades[] = {"MOTOR", "FRENOS", "ELECTRICIDAD", "SUSPENSION", "GENERAL"};
     bool especialidadValida = false;
     for (size_t i = 0; i < sizeof(especialidades) / sizeof(especialidades[0]); ++i) {
-        if (strcmp(datos.especialidad, especialidades[i]) == 0) especialidadValida = true;
-    }
-    if (!cedulaValida(datos.cedula) || buscarMecanicoporCedula(s, datos.cedula) != nullptr ||
-        !especialidadValida) return nullptr;
-    if (datos.fechaIngreso[0] == '\0') obtenerFechaActual(datos.fechaIngreso, sizeof(datos.fechaIngreso));
-    if (s->numMecanicos >= s->capacidadMecanicos) {
-        redimensionarMecanicos(s);
-    }
-
-    datos.id = s->siguienteIdMecanicos++;
-    s->mecanicos[s->numMecanicos] = datos;
-    s->numMecanicos++;
-
-    return &(s->mecanicos[s->numMecanicos - 1]);
-}
-
-Mecanico* buscarMecanicoporID(SistemaTaller* s, int id) {
-    for (int i = 0; i < s->numMecanicos; i++) {
-        if (s->mecanicos[i].id == id) {
-            return &(s->mecanicos[i]);
+        if (strcmp(mecanico.especialidad, especialidades[i]) == 0) {
+            especialidadValida = true;
+            break;
         }
     }
-    return nullptr;
-}
+    if (!especialidadValida) return ResultadoArchivoDetalles::ParametrosInvalidos;
 
-Mecanico* buscarMecanicoporCedula(SistemaTaller* s, const char* cedula) {
-    for (int i = 0; i < s->numMecanicos; i++) {
-        if (igualSinMayusculas(s->mecanicos[i].cedula, cedula)) {
-            return &(s->mecanicos[i]);
-        }
+    Mecanico existente;
+    ResultadoArchivoDetalles resultado = buscarMecanicoPorCedula(mecanico.cedula, existente);
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
     }
-    return nullptr;
-}
+    if (resultado != ResultadoArchivoDetalles::RegistroNoEncontrado) return resultado;
 
-Mecanico* listarMecanico(SistemaTaller* s, int* cantidad) {
-    *cantidad = s->numMecanicos;
-    if (s->numMecanicos == 0) return nullptr;
-    return s->mecanicos;
-}
-
-int contarOrdenesAbiertasMecanico(SistemaTaller *s, int idMecanico) {
-    int cont = 0;
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (s->ordenes[i].idMecanico == idMecanico) {
-            if (igualSinMayusculas(s->ordenes[i].estado, "Abierta")) {
-                cont++;
-            }
-        }
+    ArchivoHeader header;
+    resultado = leerHeaderMecanicos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (header.proximoID == numeric_limits<int>::max()) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
     }
-    return cont;
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) * static_cast<streamoff>(sizeof(Mecanico));
+    std::fstream archivo(ARCHIVO_MECANICOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekp(0, ios::end);
+    if (!archivo || archivo.tellp() != posicion) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+
+    mecanico.id = header.proximoID;
+    mecanico.eliminado = false;
+    if (mecanico.fechaIngreso[0] == '\0') {
+        obtenerFechaActual(mecanico.fechaIngreso, sizeof(mecanico.fechaIngreso));
+    }
+    mecanico.fechaCreacion = time(nullptr);
+    mecanico.fechaUltimaModificacion = mecanico.fechaCreacion;
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&mecanico), sizeof(Mecanico));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    ++header.cantidadRegistros;
+    ++header.registrosActivos;
+    ++header.proximoID;
+    archivo.seekp(0, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+    return archivo ? ResultadoArchivoDetalles::Correcto : ResultadoArchivoDetalles::ErrorEscritura;
 }
 
-bool capturarDatosMecanico(SistemaTaller* s, Mecanico& datos) {
+bool capturarDatosMecanico(Mecanico& datos) {
     const char* especialidades[] = {"MOTOR", "FRENOS", "ELECTRICIDAD", "SUSPENSION", "GENERAL"};
     int campo = 0;
     while (campo < 3) {
@@ -1513,10 +1890,17 @@ bool capturarDatosMecanico(SistemaTaller* s, Mecanico& datos) {
                 cout << "[!] Cedula invalida; use digitos, opcionalmente precedidos por V- o E-." << endl;
                 resultado = ResultadoEntrada::Reintentar;
             }
-            if (resultado == ResultadoEntrada::Correcto &&
-                buscarMecanicoporCedula(s, datos.cedula) != nullptr) {
-                cout << "[!] Esa cedula ya esta registrada." << endl;
-                resultado = ResultadoEntrada::Reintentar;
+            if (resultado == ResultadoEntrada::Correcto) {
+                Mecanico existente;
+                ResultadoArchivoDetalles busqueda =
+                    buscarMecanicoPorCedula(datos.cedula, existente);
+                if (busqueda == ResultadoArchivoDetalles::Correcto) {
+                    cout << "[!] Esa cedula ya esta registrada." << endl;
+                    resultado = ResultadoEntrada::Reintentar;
+                } else if (busqueda != ResultadoArchivoDetalles::RegistroNoEncontrado) {
+                    cout << "[!] No se pudo consultar mecanicos.bin." << endl;
+                    resultado = ResultadoEntrada::Reintentar;
+                }
             }
             if (resultado == ResultadoEntrada::Correcto) {
                 Validaciones::convertirAMayusculas(datos.cedula);
@@ -1542,64 +1926,38 @@ bool capturarDatosMecanico(SistemaTaller* s, Mecanico& datos) {
     return true;
 }
 
-bool eliminarMecanico(SistemaTaller* s, int id) {
-    Mecanico* m = buscarMecanicoporID(s, id);
-    if (m == nullptr || m->eliminado) return false;
+ResultadoArchivoDetalles eliminarMecanico(SistemaTaller* s, int id) {
+    (void)s;
+    Mecanico mecanico;
+    ResultadoArchivoDetalles resultado = buscarMecanicoPorID(id, mecanico);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
 
-    if (contarOrdenesAbiertasMecanico(s, id) > 0) return false;
-
-    m->eliminado = true;
-    m->fechaUltimaModificacion = time(nullptr);
-
-    const streamoff posicion =
-        static_cast<streamoff>(sizeof(ArchivoHeader))+
-        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Mecanico));
-
-    std::fstream archivo(ARCHIVO_MECANICOS, ios::in | ios::out | ios::binary);
-    if (!archivo.is_open()) return false;
-    archivo.seekp(posicion, ios::beg);
-    if (!archivo) {
-        archivo.close();
-        return false;
-    }
-    archivo.write(reinterpret_cast<const char*>(m), sizeof(Mecanico));
-    archivo.close();
-
-    ArchivoHeader header;
-    std::ifstream lector(ARCHIVO_MECANICOS, ios::in | ios::binary);
-    if (lector.is_open()) {
-        lector.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-        lector.close();
+    int ordenesAbiertas = 0;
+    resultado = contarOrdenesAbiertasMecanico(id, ordenesAbiertas);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (ordenesAbiertas > 0) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
     }
 
-    if (header.registrosActivos > 0) {
-        header.registrosActivos--;
-        std::fstream escritor(ARCHIVO_MECANICOS, ios::in | ios::out | ios::binary);
-        if (escritor.is_open()) {
-            escritor.seekp(0, ios::beg);
-            escritor.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
-            escritor.close();
-        }
-    }
-
-    return true;
-
+    mecanico.eliminado = true;
+    return guardarMecanico(mecanico);
 }
 
 void menuRegistrarMecanico(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     Mecanico nuevoM = {};
     cout << "\n--- REGISTRAR NUEVO MECANICO ---" << endl;
     mostrarOpcionVolver();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    if (!capturarDatosMecanico(s, nuevoM)) return;
+    if (!capturarDatosMecanico(nuevoM)) return;
     if (!confirmarAccion("Guardar mecanico")) return;
-    nuevoM.fechaIngreso[0] = '\0';
-    if (agregarMecanico(s, nuevoM) == nullptr) {
-        cout << "[!] Cedula duplicada o datos invalidos." << endl;
+    ResultadoArchivoDetalles resultado = agregarMecanico(nuevoM);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo registrar el mecanico (" << static_cast<int>(resultado) << ")." << endl;
         return;
     }
-    cout << "\n[OK] Mecanico registrado exitosamente." << endl;
+    cout << "\n[OK] Mecanico registrado con ID " << nuevoM.id << "." << endl;
 }
 
 void menuListarMecanico(SistemaTaller* s) {
@@ -1608,26 +1966,27 @@ void menuListarMecanico(SistemaTaller* s) {
     pausarParaContinuar();
 }
 
-void mostrarMecanicoUnico(Mecanico *m) {
-    if (m == nullptr) {
-        cout << "[!] Mecanico no encontrado." << endl;
-        return;
-    }
+void mostrarMecanicoUnico(const Mecanico& mecanico) {
     cout << "-------------------------------------------" << endl;
-    cout << "ID: " << m->id << endl;
-    cout << "Nombre: " << m->nombre << endl;
-    cout << "Cedula: " << m->cedula << endl;
-    cout << "Especialidad: " << m->especialidad << endl;
-    cout << "Fecha Ingreso: " << m->fechaIngreso << endl;
+    cout << "ID: " << mecanico.id << endl;
+    cout << "Nombre: " << mecanico.nombre << endl;
+    cout << "Cedula: " << mecanico.cedula << endl;
+    cout << "Especialidad: " << mecanico.especialidad << endl;
+    cout << "Fecha Ingreso: " << mecanico.fechaIngreso << endl;
     cout << "--------------------------------------------" << endl;
 }
 
 void mostrarMecanico(SistemaTaller* s) {
+    (void)s;
     int id = 0;
     if (!leerEnteroRango("Ingrese el ID del mecanico a mostrar: ",
                          numeric_limits<int>::min(), numeric_limits<int>::max(), id)) return;
-    Mecanico* m = buscarMecanicoporID(s, id);
-    mostrarMecanicoUnico(m);
+    Mecanico mecanico;
+    if (buscarMecanicoPorID(id, mecanico) == ResultadoArchivoDetalles::Correcto) {
+        mostrarMecanicoUnico(mecanico);
+    } else {
+        cout << "[!] Mecanico no encontrado o no se pudo leer mecanicos.bin." << endl;
+    }
 }
 
 void menuEliminarMecanico(SistemaTaller* s) {
@@ -1639,153 +1998,314 @@ void menuEliminarMecanico(SistemaTaller* s) {
     if (Validaciones::leerEnteroRango("ID: ", 1, numeric_limits<int>::max(), id) !=
         ResultadoEntrada::Correcto) return;
     if (!confirmarAccion("Eliminar mecanico")) return;
-    cout << (eliminarMecanico(s, id) ? "[OK] Mecanico eliminado." :
-             "[!] No existe, ya esta eliminado o tiene ordenes abiertas asignadas.") << endl;
+    ResultadoArchivoDetalles resultado = eliminarMecanico(s, id);
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
+        cout << "[OK] Mecanico eliminado." << endl;
+    } else if (resultado == ResultadoArchivoDetalles::ParametrosInvalidos) {
+        cout << "[!] El mecanico tiene ordenes abiertas asignadas." << endl;
+    } else {
+        cout << "[!] No se pudo eliminar el mecanico (" << static_cast<int>(resultado) << ")." << endl;
+    }
 }
 
 void mostrarListaMecanico(SistemaTaller* s) {
-    int activos = 0;
-    for (int i = 0; i < s->numMecanicos; i++) {
-        if (!s->mecanicos[i].eliminado) activos++;
+    (void)s;
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderMecanicos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar mecanicos.bin." << endl;
+        return;
     }
-
-    if (activos == 0) {
-        cout << "\n[!] No hay mecanicos registados para mostrar." << endl;
+    if (header.cantidadRegistros == 0) {
+        cout << "\n[!] No hay mecanicos registrados para mostrar." << endl;
         return;
     }
 
-    cout << "\n==== LISTA DE MECANICOS (" << activos << ") =====" << endl;
-    for (int i = 0; i < s->numMecanicos; i++) {
-        if (!s->mecanicos[i].eliminado) {
-            mostrarMecanicoUnico(&s->mecanicos[i]);
-            cout << "Ordenes Abiertas: " << contarOrdenesAbiertasMecanico(s, s->mecanicos[i].id) << endl;
+    LectorRegistrosArchivo<Mecanico> lector;
+    resultado = lector.abrir(ARCHIVO_MECANICOS, header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer mecanicos.bin." << endl;
+        return;
+    }
+
+    cout << "\n==== LISTA DE MECANICOS (" << header.cantidadRegistros << ") =====" << endl;
+    for (int i = 0; i < header.cantidadRegistros; ++i) {
+        Mecanico mecanico;
+        resultado = lector.siguiente(mecanico);
+        if (resultado != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de mecanicos.bin." << endl;
+            break;
+        }
+        mostrarMecanicoUnico(mecanico);
+        cout << "Estado: " << (mecanico.eliminado ? "DADO DE BAJA" : "ACTIVO") << endl;
+        int ordenesAbiertas = 0;
+        ResultadoArchivoDetalles lecturaOrdenes =
+            contarOrdenesAbiertasMecanico(mecanico.id, ordenesAbiertas);
+        cout << "Ordenes abiertas: ";
+        if (lecturaOrdenes == ResultadoArchivoDetalles::Correcto) {
+            cout << ordenesAbiertas << endl;
+        } else {
+            cout << "[!] No se pudieron consultar ordenes.bin." << endl;
         }
     }
 }
 
-//SISTEMA DE REPUESTOS
-void redimensionarRepuestos(SistemaTaller* s) {
-    s->capacidadRepuestos *= 2;
-    Repuesto* nuevosRepuestos = new Repuesto[s->capacidadRepuestos];
+// SISTEMA DE REPUESTOS
+ResultadoArchivoDetalles leerHeaderRepuestos(ArchivoHeader& header) {
+    std::ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
 
-    for (int i = 0; i < s->numRepuestos; i++) {
-        nuevosRepuestos[i] = s->repuestos[i];
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (header.cantidadRegistros < 0 ||
+        header.cantidadRegistros == numeric_limits<int>::max() ||
+        header.proximoID != header.cantidadRegistros + 1 ||
+        header.registrosActivos < 0 ||
+        header.registrosActivos > header.cantidadRegistros ||
+        header.version != VERSION_ARCHIVO) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
     }
 
-    delete[] s->repuestos;
-    s->repuestos = nuevosRepuestos;
-}
-
-Repuesto* agregarRepuesto(SistemaTaller* s, Repuesto datos) {
-    Validaciones::convertirAMayusculas(datos.codigo);
-    if (datos.precio <= 0.0f || datos.stock < 0 || datos.stockMinimo < 0 ||
-        buscarRepuestoPorCodigo(s, datos.codigo) != nullptr) return nullptr;
-    if (datos.fechaRegistro[0] == '\0') obtenerFechaActual(datos.fechaRegistro, sizeof(datos.fechaRegistro));
-    if (s->numRepuestos >= s->capacidadRepuestos) {
-        redimensionarRepuestos(s);
+    archivo.seekg(0, ios::end);
+    const streamoff tamEsperado = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) * static_cast<streamoff>(sizeof(Repuesto));
+    if (!archivo || archivo.tellg() != tamEsperado) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
     }
-
-    datos.id = s->siguienteIdRepuestos++;
-    s->repuestos[s->numRepuestos] = datos;
-    s->numRepuestos++;
-
-    return &(s->repuestos[s->numRepuestos - 1]);
+    return ResultadoArchivoDetalles::Correcto;
 }
 
-Repuesto* buscarRepuestoPorID(SistemaTaller* s, int id) {
-    for (int i = 0; i < s->numRepuestos; i++) {
-        if (s->repuestos[i].id == id) {
-            return &(s->repuestos[i]);
-        }
-    }
-    return nullptr;
-}
-
-Repuesto* buscarRepuestoPorCodigo(SistemaTaller* s, const char* codigo) {
-    for (int i = 0; i < s->numRepuestos; i++) {
-        if (igualSinMayusculas(s->repuestos[i].codigo, codigo)) {
-            return &(s->repuestos[i]);
-        }
-    }
-    return nullptr;
-}
-
-Repuesto* buscarRepuestoPorNombreParcial(SistemaTaller* s, const char* subcadena) {
-    for (int i = 0; i < s->numRepuestos; i++) {
-        if (contieneSinMayusculas(s->repuestos[i].nombre, subcadena)) {
-            return &(s->repuestos[i]);
-        }
-    }
-    return nullptr;
-}
-
-Repuesto* listarRepuesto(SistemaTaller* s, int* cantidad) {
-     *cantidad = s->numRepuestos;
-    if (s->numRepuestos == 0) return nullptr;
-    return s->repuestos;
-}
-
-bool menuRegistrarEntradaMercancia(SistemaTaller* s, int idRepuesto, int CantidadAdicional) {
-    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
-    if (r == nullptr || CantidadAdicional <= 0 || r->stock > numeric_limits<int>::max() - CantidadAdicional) return false;
-    r->stock += CantidadAdicional;
-    return true;
-}
-
-bool cambiarPrecioRepuesto(SistemaTaller* s, int idRepuesto, float nuevoPrecio) {
-    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
-    if (r == nullptr || nuevoPrecio <= 0.0f) return false;
-    r->precio = nuevoPrecio;
-    return true;
-}
-
-bool eliminarRepuesto(SistemaTaller* s, int id) {
-    Repuesto* r = buscarRepuestoPorID(s, id);
-    if (r == nullptr || r->eliminado) return false;
-
-    bool tieneDetalles = false;
-    if (existeDetalleDeRepuesto(id, tieneDetalles) != ResultadoArchivoDetalles::Correcto || tieneDetalles) {
-        return false;
-    }
-
-    r->eliminado = true;
-    r->fechaUltimaModificacion = time(nullptr);
-
-    const streamoff posicion =
-       static_cast<streamoff>(sizeof(ArchivoHeader)) +
-       static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Repuesto));
-
-    std::fstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::out | ios::binary);
-    if (!archivo.is_open()) return false;
-    archivo.seekp(posicion, ios::beg);
-    if (!archivo) {
-        archivo.close();
-        return false;
-    }
-    archivo.write(reinterpret_cast<const char*>(r), sizeof(Repuesto));
-    archivo.close();
+ResultadoArchivoDetalles buscarRepuestoPorID(
+    int id, Repuesto& repuesto, bool incluirEliminado) {
+    if (id < 1) return ResultadoArchivoDetalles::IdInvalido;
 
     ArchivoHeader header;
-    std::ifstream lector(ARCHIVO_REPUESTOS, ios::in | ios::binary);
-    if (lector.is_open()) {
-        lector.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
-        lector.close();
-    }
+    ResultadoArchivoDetalles resultado = leerHeaderRepuestos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (id > header.cantidadRegistros) return ResultadoArchivoDetalles::RegistroNoEncontrado;
 
-    if (header.registrosActivos > 0) {
-        header.registrosActivos--;
-        std::fstream escritor(ARCHIVO_REPUESTOS, ios::in | ios::out | ios::binary);
-        if (escritor.is_open()) {
-            escritor.seekp(0, ios::beg);
-            escritor.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
-            escritor.close();
-        }
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(id - 1) * static_cast<streamoff>(sizeof(Repuesto));
+    std::ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&repuesto), sizeof(Repuesto));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (repuesto.id != id) return ResultadoArchivoDetalles::RegistroInconsistente;
+    if (repuesto.eliminado && !incluirEliminado) {
+        return ResultadoArchivoDetalles::RegistroNoEncontrado;
     }
-
-    return true;
+    return ResultadoArchivoDetalles::Correcto;
 }
 
-bool capturarDatosRepuesto(SistemaTaller* s, Repuesto& datos) {
+ResultadoArchivoDetalles buscarRepuestoPorCodigo(
+    const char* codigo, Repuesto& repuesto, bool incluirEliminado = false) {
+    if (codigo == nullptr || codigo[0] == '\0') {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderRepuestos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    std::ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+
+    for (int indice = 0; indice < header.cantidadRegistros; ++indice) {
+        Repuesto actual;
+        archivo.read(reinterpret_cast<char*>(&actual), sizeof(Repuesto));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+        if (actual.id != indice + 1 ||
+            !cadenaTerminada(actual.codigo, sizeof(actual.codigo))) {
+            return ResultadoArchivoDetalles::RegistroInconsistente;
+        }
+        if (igualSinMayusculas(actual.codigo, codigo) &&
+            (incluirEliminado || !actual.eliminado)) {
+            repuesto = actual;
+            return ResultadoArchivoDetalles::Correcto;
+        }
+    }
+    return ResultadoArchivoDetalles::RegistroNoEncontrado;
+}
+
+ResultadoArchivoDetalles buscarRepuestoPorNombreParcial(
+    const char* subcadena, Repuesto& repuesto) {
+    if (subcadena == nullptr || subcadena[0] == '\0') {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderRepuestos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    std::ifstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+
+    for (int indice = 0; indice < header.cantidadRegistros; ++indice) {
+        Repuesto actual;
+        archivo.read(reinterpret_cast<char*>(&actual), sizeof(Repuesto));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+        if (actual.id != indice + 1 ||
+            !cadenaTerminada(actual.nombre, sizeof(actual.nombre))) {
+            return ResultadoArchivoDetalles::RegistroInconsistente;
+        }
+        if (!actual.eliminado && contieneSinMayusculas(actual.nombre, subcadena)) {
+            repuesto = actual;
+            return ResultadoArchivoDetalles::Correcto;
+        }
+    }
+    return ResultadoArchivoDetalles::RegistroNoEncontrado;
+}
+
+ResultadoArchivoDetalles guardarRepuesto(const Repuesto& repuesto) {
+    if (repuesto.id < 1) return ResultadoArchivoDetalles::IdInvalido;
+
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderRepuestos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (repuesto.id > header.cantidadRegistros) return ResultadoArchivoDetalles::IdInvalido;
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(repuesto.id - 1) * static_cast<streamoff>(sizeof(Repuesto));
+    std::fstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+
+    Repuesto existente;
+    archivo.seekg(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    archivo.read(reinterpret_cast<char*>(&existente), sizeof(Repuesto));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorLectura;
+    if (existente.id != repuesto.id) return ResultadoArchivoDetalles::RegistroInconsistente;
+
+    Repuesto actualizado = repuesto;
+    actualizado.fechaCreacion = existente.fechaCreacion;
+    actualizado.fechaUltimaModificacion = time(nullptr);
+    if (!existente.eliminado && actualizado.eliminado) {
+        if (header.registrosActivos == 0) return ResultadoArchivoDetalles::EncabezadoInvalido;
+        --header.registrosActivos;
+    } else if (existente.eliminado && !actualizado.eliminado) {
+        if (header.registrosActivos >= header.cantidadRegistros) {
+            return ResultadoArchivoDetalles::EncabezadoInvalido;
+        }
+        ++header.registrosActivos;
+    }
+
+    archivo.clear();
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&actualizado), sizeof(Repuesto));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    if (existente.eliminado != actualizado.eliminado) {
+        archivo.seekp(0, ios::beg);
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+        archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+        if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    }
+    return ResultadoArchivoDetalles::Correcto;
+}
+
+ResultadoArchivoDetalles agregarRepuesto(Repuesto& repuesto) {
+    if (!cadenaTerminada(repuesto.codigo, sizeof(repuesto.codigo)) ||
+        !cadenaTerminada(repuesto.nombre, sizeof(repuesto.nombre)) ||
+        !cadenaTerminada(repuesto.marca, sizeof(repuesto.marca)) ||
+        !textoNoVacio(repuesto.codigo) || !textoNoVacio(repuesto.nombre) ||
+        !textoNoVacio(repuesto.marca) || repuesto.precio <= 0.0f ||
+        repuesto.stock < 0 || repuesto.stockMinimo < 0) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+
+    Validaciones::convertirAMayusculas(repuesto.codigo);
+    Repuesto existente;
+    ResultadoArchivoDetalles resultado =
+        buscarRepuestoPorCodigo(repuesto.codigo, existente);
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+    if (resultado != ResultadoArchivoDetalles::RegistroNoEncontrado) return resultado;
+
+    ArchivoHeader header;
+    resultado = leerHeaderRepuestos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (header.proximoID == numeric_limits<int>::max()) {
+        return ResultadoArchivoDetalles::EncabezadoInvalido;
+    }
+
+    const streamoff posicion = static_cast<streamoff>(sizeof(ArchivoHeader)) +
+        static_cast<streamoff>(header.cantidadRegistros) * static_cast<streamoff>(sizeof(Repuesto));
+    std::fstream archivo(ARCHIVO_REPUESTOS, ios::in | ios::out | ios::binary);
+    if (!archivo.is_open()) return ResultadoArchivoDetalles::ArchivoNoDisponible;
+    archivo.seekp(0, ios::end);
+    if (!archivo || archivo.tellp() != posicion) {
+        return ResultadoArchivoDetalles::RegistroInconsistente;
+    }
+
+    repuesto.id = header.proximoID;
+    repuesto.eliminado = false;
+    if (repuesto.fechaRegistro[0] == '\0') {
+        obtenerFechaActual(repuesto.fechaRegistro, sizeof(repuesto.fechaRegistro));
+    }
+    repuesto.fechaCreacion = time(nullptr);
+    repuesto.fechaUltimaModificacion = repuesto.fechaCreacion;
+    archivo.seekp(posicion, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&repuesto), sizeof(Repuesto));
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.flush();
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+
+    ++header.cantidadRegistros;
+    ++header.registrosActivos;
+    ++header.proximoID;
+    archivo.seekp(0, ios::beg);
+    if (!archivo) return ResultadoArchivoDetalles::ErrorEscritura;
+    archivo.write(reinterpret_cast<const char*>(&header), sizeof(ArchivoHeader));
+    return archivo ? ResultadoArchivoDetalles::Correcto : ResultadoArchivoDetalles::ErrorEscritura;
+}
+
+ResultadoArchivoDetalles registrarEntradaMercancia(int idRepuesto, int cantidadAdicional) {
+    if (cantidadAdicional <= 0) return ResultadoArchivoDetalles::ParametrosInvalidos;
+    Repuesto repuesto;
+    ResultadoArchivoDetalles resultado = buscarRepuestoPorID(idRepuesto, repuesto);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (repuesto.stock > numeric_limits<int>::max() - cantidadAdicional) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
+    }
+    repuesto.stock += cantidadAdicional;
+    return guardarRepuesto(repuesto);
+}
+
+ResultadoArchivoDetalles cambiarPrecioRepuesto(int idRepuesto, float nuevoPrecio) {
+    if (nuevoPrecio <= 0.0f) return ResultadoArchivoDetalles::ParametrosInvalidos;
+    Repuesto repuesto;
+    ResultadoArchivoDetalles resultado = buscarRepuestoPorID(idRepuesto, repuesto);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    repuesto.precio = nuevoPrecio;
+    return guardarRepuesto(repuesto);
+}
+
+ResultadoArchivoDetalles eliminarRepuesto(int id) {
+    Repuesto repuesto;
+    ResultadoArchivoDetalles resultado = buscarRepuestoPorID(id, repuesto);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+
+    bool existe = false;
+    resultado = existeDetalleDeRepuesto(id, existe);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (existe) return ResultadoArchivoDetalles::ParametrosInvalidos;
+
+    repuesto.eliminado = true;
+    return guardarRepuesto(repuesto);
+}
+
+bool capturarDatosRepuesto(Repuesto& datos) {
     int campo = 0;
     double precio = 0.0;
     while (campo < 6) {
@@ -1793,13 +2313,19 @@ bool capturarDatosRepuesto(SistemaTaller* s, Repuesto& datos) {
         switch (campo) {
             case 0:
                 resultado = Validaciones::leerTexto("Codigo: ", datos.codigo, sizeof(datos.codigo));
-                if (resultado == ResultadoEntrada::Correcto &&
-                    buscarRepuestoPorCodigo(s, datos.codigo) != nullptr) {
-                    cout << "[!] Ese codigo ya esta registrado." << endl;
-                    resultado = ResultadoEntrada::Reintentar;
-                }
                 if (resultado == ResultadoEntrada::Correcto) {
-                    Validaciones::convertirAMayusculas(datos.codigo);
+                    Repuesto existente;
+                    ResultadoArchivoDetalles busqueda =
+                        buscarRepuestoPorCodigo(datos.codigo, existente);
+                    if (busqueda == ResultadoArchivoDetalles::Correcto) {
+                        cout << "[!] Ese codigo ya esta registrado." << endl;
+                        resultado = ResultadoEntrada::Reintentar;
+                    } else if (busqueda != ResultadoArchivoDetalles::RegistroNoEncontrado) {
+                        cout << "[!] No se pudo consultar repuestos.bin." << endl;
+                        resultado = ResultadoEntrada::Reintentar;
+                    } else {
+                        Validaciones::convertirAMayusculas(datos.codigo);
+                    }
                 }
                 break;
             case 1:
@@ -1828,54 +2354,88 @@ bool capturarDatosRepuesto(SistemaTaller* s, Repuesto& datos) {
     return true;
 }
 
+void mostrarRepuesto(const Repuesto& repuesto) {
+    cout << "-------------------------------------------" << endl;
+    cout << "ID: " << repuesto.id << endl;
+    cout << "Nombre: " << repuesto.nombre << endl;
+    cout << "Codigo: " << repuesto.codigo << endl;
+    cout << "Marca: " << repuesto.marca << endl;
+    cout << "Precio $: " << repuesto.precio << endl;
+    cout << "Stock disponible: " << repuesto.stock;
+    if (repuesto.stock <= repuesto.stockMinimo) cout << " [BAJO STOCK]";
+    cout << endl;
+    cout << "Stock minimo: " << repuesto.stockMinimo << endl;
+    cout << "--------------------------------------------" << endl;
+}
+
+void mostrarResultadoBusquedaRepuesto(
+    ResultadoArchivoDetalles resultado, const Repuesto& repuesto) {
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
+        mostrarRepuesto(repuesto);
+    } else if (resultado == ResultadoArchivoDetalles::RegistroNoEncontrado) {
+        cout << "[!] Repuesto no encontrado." << endl;
+    } else {
+        cout << "[!] No se pudo consultar repuestos.bin ("
+             << static_cast<int>(resultado) << ")." << endl;
+    }
+}
+
 void menuRegistrarRepuesto(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     Repuesto nuevoR = {};
     cout << "\n--- REGISTRAR NUEVO REPUESTO ---" << endl;
     mostrarOpcionVolver();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    if (!capturarDatosRepuesto(s, nuevoR)) return;
-    nuevoR.fechaRegistro[0] = '\0';
+    if (!capturarDatosRepuesto(nuevoR)) return;
 
     if (!confirmarAccion("Guardar repuesto")) return;
-    if (agregarRepuesto(s, nuevoR) == nullptr) {
-        cout << "[!] Codigo duplicado o datos invalidos." << endl;
+    ResultadoArchivoDetalles resultado = agregarRepuesto(nuevoR);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo registrar el repuesto ("
+             << static_cast<int>(resultado) << ")." << endl;
         return;
     }
-    cout << "\n[OK] Repuesto registrado exitosamente" << endl;
+    cout << "\n[OK] Repuesto registrado con ID " << nuevoR.id << "." << endl;
 }
 
 void menuBuscarRepuesto(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
-    int opc = 0;
-    cout << "\n--- BUSCAR REPUESTO ---" << endl;
-    cout << "1. Buscar por ID" << endl;
-    cout << "2. Buscar por Codigo" << endl;
-    cout << "3. Buscar por Nombre (parcial)" << endl;
+    int opcion = 0;
+    cout << "\n--- BUSCAR REPUESTO ---\n"
+         << "1. Buscar por ID\n2. Buscar por Codigo\n3. Buscar por Nombre (parcial)\n";
     mostrarOpcionVolver();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     int campo = 0;
     while (campo < 2) {
         ResultadoEntrada resultado;
         if (campo == 0) {
-            resultado = Validaciones::leerEnteroRango("Seleccione una opcion (1-3): ", 1, 3, opc);
-        } else if (opc == 1) {
+            resultado = Validaciones::leerEnteroRango("Seleccione una opcion (1-3): ", 1, 3, opcion);
+        } else if (opcion == 1) {
             int id = 0;
             resultado = Validaciones::leerEnteroRango(
                 "Ingrese ID del repuesto: ", 1, numeric_limits<int>::max(), id);
-            if (resultado == ResultadoEntrada::Correcto) mostrarRepuesto(buscarRepuestoPorID(s, id));
-        } else if (opc == 2) {
+            if (resultado == ResultadoEntrada::Correcto) {
+                Repuesto repuesto;
+                mostrarResultadoBusquedaRepuesto(buscarRepuestoPorID(id, repuesto), repuesto);
+            }
+        } else if (opcion == 2) {
             char codigo[20] = {};
             resultado = Validaciones::leerTexto("Ingrese Codigo: ", codigo, sizeof(codigo));
             if (resultado == ResultadoEntrada::Correcto) {
-                mostrarRepuesto(buscarRepuestoPorCodigo(s, codigo));
+                Repuesto repuesto;
+                mostrarResultadoBusquedaRepuesto(
+                    buscarRepuestoPorCodigo(codigo, repuesto), repuesto);
             }
         } else {
-            char sub[100] = {};
+            char subcadena[100] = {};
             resultado = Validaciones::leerTexto(
-                "Ingrese el nombre o parte del mismo: ", sub, sizeof(sub));
+                "Ingrese el nombre o parte del mismo: ", subcadena, sizeof(subcadena));
             if (resultado == ResultadoEntrada::Correcto) {
-                mostrarRepuesto(buscarRepuestoPorNombreParcial(s, sub));
+                Repuesto repuesto;
+                mostrarResultadoBusquedaRepuesto(
+                    buscarRepuestoPorNombreParcial(subcadena, repuesto), repuesto);
             }
         }
         if (!Validaciones::procesarResultado(resultado, campo)) return;
@@ -1883,8 +2443,9 @@ void menuBuscarRepuesto(SistemaTaller* s) {
 }
 
 void menuEntradaMercancia(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
-    int id = 0, cant = 0;
+    int id = 0, cantidad = 0;
     cout << "\n--- REGISTRAR ENTRADA DE MERCANCIA ---" << endl;
     mostrarOpcionVolver();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -1893,19 +2454,23 @@ void menuEntradaMercancia(SistemaTaller* s) {
         ResultadoEntrada resultado = campo == 0
             ? Validaciones::leerEnteroRango("Ingrese ID del repuesto: ", 1, numeric_limits<int>::max(), id)
             : Validaciones::leerEnteroRango(
-                "Ingrese la cantidad adicional a sumar al stock: ", 1, numeric_limits<int>::max(), cant);
+                "Ingrese la cantidad adicional a sumar al stock: ",
+                1, numeric_limits<int>::max(), cantidad);
         if (!Validaciones::procesarResultado(resultado, campo)) return;
     }
 
     if (!confirmarAccion("Registrar entrada de mercancia")) return;
-    if (menuRegistrarEntradaMercancia(s, id, cant)) {
+    ResultadoArchivoDetalles resultado = registrarEntradaMercancia(id, cantidad);
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
         cout << "[OK] Entrada de mercancia registrada con exito." << endl;
     } else {
-        cout << "[!] No se encontro el repuesto con ese ID." << endl;
+        cout << "[!] No se pudo registrar la entrada ("
+             << static_cast<int>(resultado) << ")." << endl;
     }
 }
 
 void menuCambiarPrecio(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     int id = 0;
     double precio = 0.0;
@@ -1915,26 +2480,30 @@ void menuCambiarPrecio(SistemaTaller* s) {
     int campo = 0;
     while (campo < 2) {
         ResultadoEntrada resultado = campo == 0
-            ? Validaciones::leerEnteroRango("Ingrese ID del repuesto: ", 1, numeric_limits<int>::max(), id)
+            ? Validaciones::leerEnteroRango(
+                "Ingrese ID del repuesto: ", 1, numeric_limits<int>::max(), id)
             : Validaciones::leerDecimalRango(
                 "Ingrese el nuevo precio (> 0): ", numeric_limits<double>::min(),
                 numeric_limits<float>::max(), precio);
         if (!Validaciones::procesarResultado(resultado, campo)) return;
     }
-    float nuevoP = static_cast<float>(precio);
 
     if (!confirmarAccion("Cambiar precio")) return;
-    if (cambiarPrecioRepuesto(s, id, nuevoP)) {
+    ResultadoArchivoDetalles resultado =
+        cambiarPrecioRepuesto(id, static_cast<float>(precio));
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
         cout << "[OK] Precio actualizado con exito." << endl;
     } else {
-        cout << "[!] No se encontro el repuesto con ese ID." << endl;
+        cout << "[!] No se pudo cambiar el precio ("
+             << static_cast<int>(resultado) << ")." << endl;
     }
 }
 
 void menuEliminarRepuesto(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     int id = 0;
-    cout << "\n--- ELIMINAR REPUESTO ---" << endl;
+    cout << "\n--- ELIMINAR REPUESTO ---\n";
     mostrarOpcionVolver();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     if (Validaciones::leerEnteroRango(
@@ -1942,98 +2511,85 @@ void menuEliminarRepuesto(SistemaTaller* s) {
         ResultadoEntrada::Correcto) return;
 
     if (!confirmarAccion("Eliminar repuesto")) return;
-    if (eliminarRepuesto(s, id)) {
+    ResultadoArchivoDetalles resultado = eliminarRepuesto(id);
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
         cout << "[OK] Repuesto eliminado exitosamente." << endl;
+    } else if (resultado == ResultadoArchivoDetalles::ParametrosInvalidos) {
+        cout << "[!] El repuesto esta asociado a una orden." << endl;
     } else {
-        cout << "[!] No existe o esta asociado a una orden." << endl;
+        cout << "[!] No se pudo eliminar el repuesto ("
+             << static_cast<int>(resultado) << ")." << endl;
     }
 }
 
 void menuListarRepuestos(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
-    int cantidad = 0;
-    Repuesto* listaSimple = listarRepuesto(s, &cantidad);
-    
-    if (listaSimple == nullptr || cantidad == 0) {
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderRepuestos(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar repuestos.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+    if (header.registrosActivos == 0) {
         cout << "\n[!] No hay repuestos registrados para mostrar." << endl;
         pausarParaContinuar();
         return;
     }
 
-    Repuesto** listaDoble = new Repuesto*[cantidad];
-    for (int i = 0; i < cantidad; i++) {
-        listaDoble[i] = &listaSimple[i];
+    LectorRegistrosArchivo<Repuesto> lector;
+    resultado = lector.abrir(ARCHIVO_REPUESTOS, header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer repuestos.bin." << endl;
+        pausarParaContinuar();
+        return;
     }
 
-    mostrarListaRepuestos(listaDoble, cantidad);
-    delete[] listaDoble;
+    cout << "\n=== LISTA DE REPUESTOS (" << header.registrosActivos << ") ===" << endl;
+    for (int i = 0; i < header.cantidadRegistros; ++i) {
+        Repuesto repuesto;
+        resultado = lector.siguiente(repuesto);
+        if (resultado != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de repuestos.bin." << endl;
+            break;
+        }
+        if (!repuesto.eliminado) mostrarRepuesto(repuesto);
+    }
     pausarParaContinuar();
 }
 
-void mostrarRepuesto(Repuesto* repuesto) {
-    if (repuesto == nullptr) {
-        cout << "[!] Repuesto no encontrado." << endl;
-        return;
-    }
-    cout << "-------------------------------------------" << endl;
-    cout << "ID: " << repuesto->id << endl;
-    cout << "Nombre: " << repuesto->nombre << endl;
-    cout << "Codigo: " << repuesto->codigo << endl;
-    cout << "Marca: " << repuesto->marca << endl;
-    cout << "Precio $: " << repuesto->precio << endl;
-    cout << "Stock disponible: " << repuesto->stock;
-
-     if (repuesto->stock <= repuesto->stockMinimo) {
-        cout << " [BAJO STOCK]";
-    }
-      cout << endl;
-      
-    cout << "Stock minimo: " << repuesto->stockMinimo << endl;
-    cout << "--------------------------------------------" << endl;
-}
-
-void mostrarListaRepuestos(Repuesto** repuestos, int cantidad) {
-    if (repuestos == nullptr || cantidad == 0) {
-        cout << "\n[!] No hay repuestos registrados para mostrar." << endl;
-        return;
-    }
-
-    cout << "\n=== LISTA DE REPUESTOS (" << cantidad << ") ===" << endl;
-    for (int i = 0; i < cantidad; i++) {
-        mostrarRepuesto(repuestos[i]);
-    }
-}
-
 //SISTEMA DE ORDEN DE SERVICIO
-void redimensionarOrdenes(SistemaTaller* s) {
-    s->capacidadOrdenes *= 2;
-    OrdenServicio* nuevasOrdenes = new OrdenServicio[s->capacidadOrdenes];
-
-    for (int i = 0; i < s->numOrdenes; i++) {
-        nuevasOrdenes[i] = s->ordenes[i];
+ResultadoArchivoDetalles abrirOrden(
+    SistemaTaller* s, int idVehiculo, int idMecanico,
+    const char* descripcionFalla, int KilometrajeIngreso,
+    const char* fechaActual, int& idOrdenCreada) {
+    (void)s;
+    idOrdenCreada = 0;
+    OrdenServicio nuevaO = {};
+    Vehiculo vehiculo;
+    Mecanico mecanico;
+    ResultadoArchivoDetalles resultado = buscarVehiculoPorID(idVehiculo, vehiculo);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    resultado = buscarMecanicoPorID(idMecanico, mecanico);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (descripcionFalla == nullptr ||
+        memchr(descripcionFalla, '\0', sizeof(nuevaO.descripcionFalla)) == nullptr ||
+        descripcionFalla[0] == '\0' || fechaActual == nullptr ||
+        !fechaValida(fechaActual) || KilometrajeIngreso < vehiculo.kilometraje) {
+        return ResultadoArchivoDetalles::ParametrosInvalidos;
     }
 
-    delete[] s->ordenes;
-    s->ordenes = nuevasOrdenes;
-}
+    int ordenesAbiertas = 0;
+    resultado = contarOrdenesAbiertasMecanico(idMecanico, ordenesAbiertas);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (ordenesAbiertas >= 3) return ResultadoArchivoDetalles::ParametrosInvalidos;
 
-OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, const char* descripcionFalla, int KilometrajeIngreso, const char* fechaActual) {
-    Vehiculo* vehiculo = buscarVehiculoPorID(s, idVehiculo);
-    if (vehiculo == nullptr || buscarMecanicoporID(s, idMecanico) == nullptr ||
-        descripcionFalla == nullptr || descripcionFalla[0] == '\0' ||
-        fechaActual == nullptr || !fechaValida(fechaActual) ||
-        KilometrajeIngreso < vehiculo->kilometraje ||
-        contarOrdenesAbiertasMecanico(s, idMecanico) >= 3) return nullptr;
-    for (int i = 0; i < s->numOrdenes; ++i) {
-        if (s->ordenes[i].idVehiculo == idVehiculo &&
-            strcmp(s->ordenes[i].estado, "Abierta") == 0) return nullptr;
-    }
-    if (s->numOrdenes >= s->capacidadOrdenes) {
-        redimensionarOrdenes(s);
-    }
+    bool existeOrdenAbierta = false;
+    resultado = existeOrdenPorVehiculo(idVehiculo, true, existeOrdenAbierta);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    if (existeOrdenAbierta) return ResultadoArchivoDetalles::ParametrosInvalidos;
 
-    OrdenServicio nuevaO ={};
-    nuevaO.id = s->siguienteIdOrdenes++;
     nuevaO.idVehiculo = idVehiculo;
     nuevaO.idMecanico = idMecanico;
     strcpy(nuevaO.descripcionFalla, descripcionFalla);
@@ -2043,19 +2599,32 @@ OrdenServicio* abrirOrden(SistemaTaller* s, int idVehiculo, int idMecanico, cons
     strcpy(nuevaO.estado, "Abierta");
     nuevaO.manoObra = 0.0f;
 
-    s->ordenes[s->numOrdenes] = nuevaO;
-    s->numOrdenes++;
-    vehiculo->kilometraje = KilometrajeIngreso;
-
-    return &(s->ordenes[s->numOrdenes - 1]);
+    Vehiculo vehiculoAnterior = vehiculo;
+    vehiculo.kilometraje = KilometrajeIngreso;
+    resultado = guardarVehiculo(vehiculo);
+    if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
+    resultado = agregarOrden(nuevaO);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        ResultadoArchivoDetalles resultadoRestauracion = guardarVehiculo(vehiculoAnterior);
+        if (resultadoRestauracion != ResultadoArchivoDetalles::Correcto) {
+            return resultadoRestauracion;
+        }
+        return resultado;
+    }
+    idOrdenCreada = nuevaO.id;
+    return ResultadoArchivoDetalles::Correcto;
 }
 
 bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int cantidad) {
-    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
-    if (o == nullptr || strcmp(o->estado, "Abierta") != 0 || cantidad <= 0) return false;
+    (void)s;
+    OrdenServicio orden;
+    if (buscarOrdenPorID(idOrden, orden) != ResultadoArchivoDetalles::Correcto ||
+        strcmp(orden.estado, "Abierta") != 0 || cantidad <= 0) return false;
 
-    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
-    if (r == nullptr || r->stock < cantidad) return false;
+    Repuesto repuesto;
+    if (buscarRepuestoPorID(idRepuesto, repuesto) !=
+            ResultadoArchivoDetalles::Correcto ||
+        repuesto.stock < cantidad) return false;
 
     DetalleArchivo detalle;
     ResultadoArchivoDetalles resultado =
@@ -2067,42 +2636,46 @@ bool agregarRepuestoAOrden(SistemaTaller* s, int idOrden, int idRepuesto, int ca
     } else if (resultado == ResultadoArchivoDetalles::RegistroNoEncontrado) {
         DetalleArchivo nuevo = {};
         nuevo.idOrden = idOrden;
-        nuevo.idRepuesto = r->id;
-        strcpy(nuevo.codigoRepuesto, r->codigo);
-        strcpy(nuevo.nombreRepuesto, r->nombre);
-        nuevo.precioUnitario = r->precio;
+        nuevo.idRepuesto = repuesto.id;
+        strcpy(nuevo.codigoRepuesto, repuesto.codigo);
+        strcpy(nuevo.nombreRepuesto, repuesto.nombre);
+        nuevo.precioUnitario = repuesto.precio;
         nuevo.cantidad = cantidad;
         resultado = crearDetalleArchivo(nuevo);
     }
 
     if (resultado != ResultadoArchivoDetalles::Correcto) return false;
-    r->stock -= cantidad;
-    r->fechaUltimaModificacion = time(nullptr);
-    return true;
+    repuesto.stock -= cantidad;
+    return guardarRepuesto(repuesto) == ResultadoArchivoDetalles::Correcto;
 }
 
 bool quitarRepuestoDeOrden(SistemaTaller* s, int idOrden, int idRepuesto) {
-    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
-    if (o == nullptr || strcmp(o->estado, "Abierta") != 0) return false;
+    (void)s;
+    OrdenServicio orden;
+    if (buscarOrdenPorID(idOrden, orden) != ResultadoArchivoDetalles::Correcto ||
+        strcmp(orden.estado, "Abierta") != 0) return false;
 
     DetalleArchivo detalle;
     if (buscarDetalleOrdenRepuesto(idOrden, idRepuesto, detalle) !=
         ResultadoArchivoDetalles::Correcto) return false;
-    Repuesto* r = buscarRepuestoPorID(s, idRepuesto);
-    if (r == nullptr || detalle.cantidad <= 0 ||
-        r->stock > numeric_limits<int>::max() - detalle.cantidad) return false;
+    Repuesto repuesto;
+    if (buscarRepuestoPorID(idRepuesto, repuesto) !=
+            ResultadoArchivoDetalles::Correcto ||
+        detalle.cantidad <= 0 ||
+        repuesto.stock > numeric_limits<int>::max() - detalle.cantidad) return false;
 
     detalle.eliminado = true;
     if (actualizarDetallePorID(detalle.idDetalle, detalle) !=
         ResultadoArchivoDetalles::Correcto) return false;
-    r->stock += detalle.cantidad;
-    r->fechaUltimaModificacion = time(nullptr);
-    return true;
+    repuesto.stock += detalle.cantidad;
+    return guardarRepuesto(repuesto) == ResultadoArchivoDetalles::Correcto;
 }
 
 bool cerrarOrden(SistemaTaller* s, int idOrden, float manoObra, const char* fechaActual) {
-    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
-    if (o == nullptr || strcmp(o->estado, "Abierta") != 0 || manoObra < 0.0f ||
+    (void)s;
+    OrdenServicio orden;
+    if (buscarOrdenPorID(idOrden, orden) != ResultadoArchivoDetalles::Correcto ||
+        strcmp(orden.estado, "Abierta") != 0 || manoObra < 0.0f ||
         fechaActual == nullptr || !fechaValida(fechaActual)) return false;
 
     size_t cantidadDetalles = 0;
@@ -2110,24 +2683,22 @@ bool cerrarOrden(SistemaTaller* s, int idOrden, float manoObra, const char* fech
             ResultadoArchivoDetalles::Correcto ||
         (manoObra == 0.0f && cantidadDetalles == 0)) return false;
 
-    o->manoObra = manoObra;
-    strcpy(o->fechaCierre, fechaActual);
-    strcpy(o->estado, "Cerrada");
-    o->fechaUltimaModificacion = time(nullptr);
-    return true;
+    orden.manoObra = manoObra;
+    strcpy(orden.fechaCierre, fechaActual);
+    strcpy(orden.estado, "Cerrada");
+    return guardarOrden(orden) == ResultadoArchivoDetalles::Correcto;
 }
 
 bool anularOrden(SistemaTaller* s, int idOrden) {
-    OrdenServicio* o = buscarOrdenPorID(s, idOrden);
-    if (o == nullptr ||
-        (strcmp(o->estado, "Abierta") != 0 && strcmp(o->estado, "Cerrada") != 0)) {
+    OrdenServicio orden;
+    if (buscarOrdenPorID(idOrden, orden) != ResultadoArchivoDetalles::Correcto ||
+        (strcmp(orden.estado, "Abierta") != 0 && strcmp(orden.estado, "Cerrada") != 0)) {
         return false;
     }
     if (validarRestitucionStockOrden(s, idOrden) != ResultadoArchivoDetalles::Correcto ||
         restituirStockOrden(s, idOrden) != ResultadoArchivoDetalles::Correcto) return false;
-    strcpy(o->estado, "Anulada");
-    o->fechaUltimaModificacion = time(nullptr);
-    return true;
+    strcpy(orden.estado, "Anulada");
+    return guardarOrden(orden) == ResultadoArchivoDetalles::Correcto;
 }
 
 ResultadoArchivoDetalles calcularTotalOrden(const OrdenServicio* orden, float& total) {
@@ -2140,66 +2711,6 @@ ResultadoArchivoDetalles calcularTotalOrden(const OrdenServicio* orden, float& t
     if (resultado != ResultadoArchivoDetalles::Correcto) return resultado;
     total = orden->manoObra + costoRepuestos;
     return ResultadoArchivoDetalles::Correcto;
-}
-
-OrdenServicio* buscarOrdenPorID(SistemaTaller* s, int id) {
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (s->ordenes[i].id == id) {
-            return &(s->ordenes[i]);
-        }
-    }
-    return nullptr;
-}
-
-OrdenServicio** listaOrdenesPorEstado(SistemaTaller* s, const char* estado, int* cantidad) {
-    int encontrados = 0;
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (igualSinMayusculas(s->ordenes[i].estado, estado)) {
-            encontrados++;
-        }
-    }
-    *cantidad = encontrados;
-    if (encontrados == 0) return nullptr;
-
-    OrdenServicio** lista = new OrdenServicio*[encontrados];
-    int j = 0;
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (igualSinMayusculas(s->ordenes[i].estado, estado)) {
-            lista[j++] = &(s->ordenes[i]);
-        }
-    }
-    return lista;
-}
-
-OrdenServicio** listaOrdenesPorVehiculo(SistemaTaller* s, int vehiculo, int* cantidad) {
-    int encontrados = 0;
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (s->ordenes[i].idVehiculo == vehiculo) {
-            encontrados++;
-        }
-    }
-    *cantidad = encontrados;
-    if (encontrados == 0) return nullptr;
-
-    OrdenServicio** lista = new OrdenServicio*[encontrados];
-    int j = 0;
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (s->ordenes[i].idVehiculo == vehiculo) {
-            lista[j++] = &(s->ordenes[i]);
-        }
-    }
-    return lista;
-}
-
-OrdenServicio** listaTodasLasOrdenes(SistemaTaller* s, int* cantidad) {
-    *cantidad = s->numOrdenes;
-    if (s->numOrdenes == 0) return nullptr;
-
-    OrdenServicio** lista = new OrdenServicio*[s->numOrdenes];
-    for (int i = 0; i < s->numOrdenes; i++) {
-        lista[i] = &(s->ordenes[i]);
-    }
-    return lista;
 }
 
 void menuAbrirOrden(SistemaTaller* s) {
@@ -2216,22 +2727,32 @@ void menuAbrirOrden(SistemaTaller* s) {
         if (campo == 0) {
             resultado = Validaciones::leerEnteroRango(
                 "Ingrese ID del Vehiculo: ", 1, numeric_limits<int>::max(), idV);
-            if (resultado == ResultadoEntrada::Correcto && buscarVehiculoPorID(s, idV) == nullptr) {
-                cout << "[!] El vehiculo no existe." << endl;
-                resultado = ResultadoEntrada::Reintentar;
+            if (resultado == ResultadoEntrada::Correcto) {
+                Vehiculo vehiculo;
+                if (buscarVehiculoPorID(idV, vehiculo) != ResultadoArchivoDetalles::Correcto) {
+                    cout << "[!] El vehiculo no existe o no se pudo leer." << endl;
+                    resultado = ResultadoEntrada::Reintentar;
+                }
             }
         } else if (campo == 1) {
             resultado = Validaciones::leerEnteroRango(
                 "Ingrese ID del Mecanico: ", 1, numeric_limits<int>::max(), idM);
-            if (resultado == ResultadoEntrada::Correcto && buscarMecanicoporID(s, idM) == nullptr) {
-                cout << "[!] El mecanico no existe." << endl;
-                resultado = ResultadoEntrada::Reintentar;
+            if (resultado == ResultadoEntrada::Correcto) {
+                Mecanico mecanico;
+                ResultadoArchivoDetalles lectura = buscarMecanicoPorID(idM, mecanico);
+                if (lectura != ResultadoArchivoDetalles::Correcto) {
+                    cout << "[!] El mecanico no existe o no se pudo leer mecanicos.bin." << endl;
+                    resultado = ResultadoEntrada::Reintentar;
+                }
             }
         } else if (campo == 2) {
             resultado = Validaciones::leerTexto("Descripcion de la falla: ", falla, sizeof(falla));
         } else {
-            Vehiculo* vehiculo = buscarVehiculoPorID(s, idV);
-            int kilometrajeMinimo = vehiculo == nullptr ? 0 : vehiculo->kilometraje;
+            Vehiculo vehiculo;
+            int kilometrajeMinimo = 0;
+            if (buscarVehiculoPorID(idV, vehiculo) == ResultadoArchivoDetalles::Correcto) {
+                kilometrajeMinimo = vehiculo.kilometraje;
+            }
             resultado = Validaciones::leerEnteroRango(
                 "Kilometraje de ingreso: ", kilometrajeMinimo, numeric_limits<int>::max(), km);
         }
@@ -2239,11 +2760,14 @@ void menuAbrirOrden(SistemaTaller* s) {
     }
     obtenerFechaActual(fecha, sizeof(fecha));
     if (!confirmarAccion("Abrir orden")) return;
-    if (abrirOrden(s, idV, idM, falla, km, fecha) == nullptr) {
+    int idOrdenCreada = 0;
+    if (abrirOrden(s, idV, idM, falla, km, fecha, idOrdenCreada) !=
+        ResultadoArchivoDetalles::Correcto) {
         cout << "[!] No se pudo abrir: revise kilometraje y limites de ordenes abiertas." << endl;
         return;
     }
-    cout << "\n[OK] Orden abierta exitosamente. Fecha: " << fecha << endl;
+    cout << "\n[OK] Orden abierta exitosamente con ID " << idOrdenCreada
+         << ". Fecha: " << fecha << endl;
 }
 
 void menuAgregarRepuestoAOrden(SistemaTaller* s) {
@@ -2356,14 +2880,18 @@ void menuVerDetalleOrden(SistemaTaller* s) {
     if (Validaciones::leerEnteroRango(
             "Ingrese ID de la Orden: ", 1, numeric_limits<int>::max(), idO) !=
         ResultadoEntrada::Correcto) return;
-    OrdenServicio* o = buscarOrdenPorID(s, idO);
-    mostrarDetalleOrden(s, o);
+    OrdenServicio orden;
+    if (buscarOrdenPorID(idO, orden) != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] Orden de servicio no encontrada o no se pudo leer." << endl;
+        return;
+    }
+    mostrarDetalleOrden(s, &orden);
 }
 
 //SISTEMA DE LISTADO GENERAL
 void menuListarOrdenes(SistemaTaller* s) {
     limpiarTerminal();
-    int opc = 0, cantidad = 0;
+    int opc = 0;
     cout << "\n--- LISTAR ORDENES ---" << endl;
     cout << "1. Listar todas" << endl;
     cout << "2. Listar por Estado (Abierta / Cerrada / Anulada)" << endl;
@@ -2377,9 +2905,7 @@ void menuListarOrdenes(SistemaTaller* s) {
             resultado = Validaciones::leerEnteroRango(
                 "Seleccione una opcion (1-3): ", 1, 3, opc);
         } else if (opc == 1) {
-            OrdenServicio** lista = listaTodasLasOrdenes(s, &cantidad);
-            mostrarListaOrdenes(s, lista, cantidad);
-            delete[] lista;
+            mostrarListaOrdenes(s, 0, nullptr, 0);
             resultado = ResultadoEntrada::Correcto;
         } else if (opc == 2) {
             char estado[20] = {};
@@ -2393,18 +2919,14 @@ void menuListarOrdenes(SistemaTaller* s) {
                 resultado = ResultadoEntrada::Reintentar;
             }
             if (resultado == ResultadoEntrada::Correcto) {
-                OrdenServicio** lista = listaOrdenesPorEstado(s, estado, &cantidad);
-                mostrarListaOrdenes(s, lista, cantidad);
-                delete[] lista;
+                mostrarListaOrdenes(s, 1, estado, 0);
             }
         } else {
             int idV = 0;
             resultado = Validaciones::leerEnteroRango(
                 "Ingrese ID del Vehiculo: ", 1, numeric_limits<int>::max(), idV);
             if (resultado == ResultadoEntrada::Correcto) {
-                OrdenServicio** lista = listaOrdenesPorVehiculo(s, idV, &cantidad);
-                mostrarListaOrdenes(s, lista, cantidad);
-                delete[] lista;
+                mostrarListaOrdenes(s, 2, nullptr, idV);
             }
         }
         if (!Validaciones::procesarResultado(resultado, campo)) return;
@@ -2413,13 +2935,18 @@ void menuListarOrdenes(SistemaTaller* s) {
 }
 
 void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
+    (void)s;
     if (orden == nullptr) {
         cout << "[!] Orden de servicio no encontrada." << endl;
         return;
     }
 
-    Vehiculo* v = buscarVehiculoPorID(s, orden->idVehiculo);
-    Mecanico* m = buscarMecanicoporID(s, orden->idMecanico);
+    Vehiculo v;
+    ResultadoArchivoDetalles resultadoVehiculo =
+        buscarVehiculoPorID(orden->idVehiculo, v, true);
+    Mecanico mecanico;
+    ResultadoArchivoDetalles resultadoMecanico =
+        buscarMecanicoPorID(orden->idMecanico, mecanico, true);
 
     cout << "\n----------------------------------------" << endl;
     cout << " ORDEN DE SERVICIO # " << orden->id << endl;
@@ -2429,16 +2956,16 @@ void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
     cout << " Falla reportada: " << orden->descripcionFalla << endl;
     
     cout << " --- VEHICULO ASOCIADO ---" << endl;
-    if (v != nullptr) {
-        cout << " Placa: " << v->placa << " | " << v->marca << " " << v->modelo << " (" << v->anio << ")" << endl;
-        cout << " Propietario: " << v->nombrePropietario << endl;
+    if (resultadoVehiculo == ResultadoArchivoDetalles::Correcto) {
+        cout << " Placa: " << v.placa << " | " << v.marca << " " << v.modelo << " (" << v.anio << ")" << endl;
+        cout << " Propietario: " << v.nombrePropietario << endl;
     } else {
         cout << " [!] Vehiculo con ID " << orden->idVehiculo << " no encontrado o eliminado." << endl;
     }
 
     cout << " --- MECANICO ASIGNADO ---" << endl;
-    if (m != nullptr) {
-        cout << " Nombre: " << m->nombre << " (Especialidad: " << m->especialidad << ")" << endl;
+    if (resultadoMecanico == ResultadoArchivoDetalles::Correcto) {
+        cout << " Nombre: " << mecanico.nombre << " (Especialidad: " << mecanico.especialidad << ")" << endl;
     } else {
         cout << " [!] Mecanico con ID " << orden->idMecanico << " no encontrado." << endl;
     }
@@ -2480,77 +3007,221 @@ void mostrarDetalleOrden(SistemaTaller* s, OrdenServicio* orden) {
     cout << "----------------------------------------" << endl;
 }
 
-void mostrarListaOrdenes(SistemaTaller* s, OrdenServicio** ordenes, int cantidad) {
+void mostrarListaOrdenes(
+    SistemaTaller* s, int tipoFiltro, const char* estado, int idVehiculo) {
     (void)s;
-    if (ordenes == nullptr || cantidad == 0) {
+    ArchivoHeader header;
+    ResultadoArchivoDetalles resultado = leerHeaderOrdenes(header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar ordenes.bin." << endl;
+        return;
+    }
+    if (header.cantidadRegistros == 0) {
         cout << "\n[!] No hay ordenes para mostrar." << endl;
         return;
     }
-    cout << "\n=== LISTADO DE ORDENES (" << cantidad << ") ===" << endl;
-    for (int i = 0; i < cantidad; i++) {
+
+    LectorRegistrosArchivo<OrdenServicio> lector;
+    resultado = lector.abrir(ARCHIVO_ORDENES, header);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer ordenes.bin." << endl;
+        return;
+    }
+
+    cout << "\n=== LISTADO DE ORDENES ===" << endl;
+    int cantidad = 0;
+    for (int i = 0; i < header.cantidadRegistros; ++i) {
+        OrdenServicio orden;
+        resultado = lector.siguiente(orden);
+        if (resultado != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de ordenes.bin." << endl;
+            return;
+        }
+        if (!cadenaTerminada(orden.estado, sizeof(orden.estado))) {
+            cout << "[!] Registros inconsistentes en ordenes.bin." << endl;
+            return;
+        }
+        if (orden.eliminado ||
+            (tipoFiltro == 1 && !igualSinMayusculas(orden.estado, estado)) ||
+            (tipoFiltro == 2 && orden.idVehiculo != idVehiculo)) continue;
+
+        ++cantidad;
         float total = 0.0f;
-        ResultadoArchivoDetalles resultado = calcularTotalOrden(ordenes[i], total);
-        cout << "[ID Orden: " << ordenes[i]->id << "] - Vehiculo ID: " << ordenes[i]->idVehiculo
-             << " - Estado: " << ordenes[i]->estado << " - Total: ";
+        resultado = calcularTotalOrden(&orden, total);
+        Vehiculo vehiculo;
+        Mecanico mecanico;
+        ResultadoArchivoDetalles lecturaVehiculo =
+            buscarVehiculoPorID(orden.idVehiculo, vehiculo, true);
+        ResultadoArchivoDetalles lecturaMecanico =
+            buscarMecanicoPorID(orden.idMecanico, mecanico, true);
+        cout << "[Orden #" << orden.id << "] - Vehiculo: ";
+        if (lecturaVehiculo == ResultadoArchivoDetalles::Correcto) {
+            cout << vehiculo.placa << " (" << vehiculo.marca << " " << vehiculo.modelo << ")";
+        } else {
+            cout << "[no disponible]";
+        }
+        cout << " - Mecanico: ";
+        if (lecturaMecanico == ResultadoArchivoDetalles::Correcto) {
+            cout << mecanico.nombre;
+        } else {
+            cout << "[no disponible]";
+        }
+        cout << " - Estado: " << orden.estado << " - Total: ";
         if (resultado == ResultadoArchivoDetalles::Correcto) {
             cout << "$" << total << endl;
         } else {
             cout << "[no disponible: error al leer detalles]" << endl;
         }
     }
+    if (cantidad == 0) cout << "\n[!] No hay ordenes para mostrar." << endl;
 }
 
 void menuListaGeneral(SistemaTaller* s) {
     limpiarTerminal();
     cout << "\n=== LISTA GENERAL DE REGISTROS ===" << endl;
-    cout << "Vehiculos registrados: " << s->numVehiculos << endl;
-    if (s->numVehiculos == 0) {
+    ArchivoHeader headerVehiculos;
+    ResultadoArchivoDetalles lecturaVehiculos = leerHeaderVehiculos(headerVehiculos);
+    if (lecturaVehiculos != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar vehiculos.bin." << endl;
+    } else if (headerVehiculos.cantidadRegistros == 0) {
+        cout << "Vehiculos registrados: 0" << endl;
         cout << "  No hay vehiculos." << endl;
     } else {
-        for (int i = 0; i < s->numVehiculos; ++i) mostrarVehiculo(&s->vehiculos[i]);
-    }
-
-    cout << "\nMecanicos registrados: " << s->numMecanicos << endl;
-    if (s->numMecanicos == 0) {
-        cout << "  No hay mecanicos." << endl;
-    } else {
-        for (int i = 0; i < s->numMecanicos; ++i) {
-            mostrarMecanicoUnico(&s->mecanicos[i]);
-            cout << "Ordenes abiertas: "
-                 << contarOrdenesAbiertasMecanico(s, s->mecanicos[i].id) << endl;
+        cout << "Vehiculos registrados: " << headerVehiculos.cantidadRegistros << endl;
+        LectorRegistrosArchivo<Vehiculo> lector;
+        ResultadoArchivoDetalles lectura =
+            lector.abrir(ARCHIVO_VEHICULOS, headerVehiculos);
+        if (lectura == ResultadoArchivoDetalles::Correcto) {
+            for (int i = 0; i < headerVehiculos.cantidadRegistros; ++i) {
+                Vehiculo vehiculo;
+                lectura = lector.siguiente(vehiculo);
+                if (lectura != ResultadoArchivoDetalles::Correcto) {
+                    cout << "[!] Error al leer vehiculos.bin." << endl;
+                    break;
+                }
+                mostrarVehiculo(vehiculo);
+            }
+        } else {
+            cout << "[!] No se pudo consultar vehiculos.bin." << endl;
         }
     }
 
-    cout << "\nRepuestos registrados: " << s->numRepuestos << endl;
-    if (s->numRepuestos == 0) {
-        cout << "  No hay repuestos." << endl;
+    ArchivoHeader headerMecanicos;
+    ResultadoArchivoDetalles lecturaMecanicos = leerHeaderMecanicos(headerMecanicos);
+    if (lecturaMecanicos != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar mecanicos.bin." << endl;
     } else {
-        for (int i = 0; i < s->numRepuestos; ++i) mostrarRepuesto(&s->repuestos[i]);
+        cout << "\nMecanicos registrados: " << headerMecanicos.cantidadRegistros << endl;
+        if (headerMecanicos.cantidadRegistros == 0) {
+            cout << "  No hay mecanicos." << endl;
+        } else {
+            LectorRegistrosArchivo<Mecanico> lector;
+            ResultadoArchivoDetalles lectura =
+                lector.abrir(ARCHIVO_MECANICOS, headerMecanicos);
+            if (lectura != ResultadoArchivoDetalles::Correcto) {
+                cout << "[!] No se pudo consultar mecanicos.bin." << endl;
+            } else {
+                for (int i = 0; i < headerMecanicos.cantidadRegistros; ++i) {
+                    Mecanico mecanico;
+                    lectura = lector.siguiente(mecanico);
+                    if (lectura != ResultadoArchivoDetalles::Correcto) {
+                        cout << "[!] Error al leer mecanicos.bin." << endl;
+                        break;
+                    }
+                    mostrarMecanicoUnico(mecanico);
+                    int ordenesAbiertas = 0;
+                    ResultadoArchivoDetalles lecturaOrdenes =
+                        contarOrdenesAbiertasMecanico(mecanico.id, ordenesAbiertas);
+                    cout << "Ordenes abiertas: ";
+                    if (lecturaOrdenes == ResultadoArchivoDetalles::Correcto) {
+                        cout << ordenesAbiertas << endl;
+                    } else {
+                        cout << "[!] No se pudieron consultar ordenes.bin." << endl;
+                    }
+                }
+            }
+        }
     }
 
-    cout << "\nOrdenes de servicio registradas: " << s->numOrdenes << endl;
-    if (s->numOrdenes == 0) {
+    ArchivoHeader headerRepuestos;
+    ResultadoArchivoDetalles lecturaRepuestos = leerHeaderRepuestos(headerRepuestos);
+    if (lecturaRepuestos != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar repuestos.bin." << endl;
+    } else {
+        cout << "\nRepuestos registrados: " << headerRepuestos.registrosActivos << endl;
+        if (headerRepuestos.registrosActivos == 0) {
+            cout << "  No hay repuestos." << endl;
+        } else {
+            LectorRegistrosArchivo<Repuesto> lector;
+            ResultadoArchivoDetalles lectura =
+                lector.abrir(ARCHIVO_REPUESTOS, headerRepuestos);
+            if (lectura != ResultadoArchivoDetalles::Correcto) {
+                cout << "[!] No se pudo consultar repuestos.bin." << endl;
+            } else {
+                for (int i = 0; i < headerRepuestos.cantidadRegistros; ++i) {
+                    Repuesto repuesto;
+                    lectura = lector.siguiente(repuesto);
+                    if (lectura != ResultadoArchivoDetalles::Correcto) {
+                        cout << "[!] Error al leer repuestos.bin." << endl;
+                        break;
+                    }
+                    if (!repuesto.eliminado) mostrarRepuesto(repuesto);
+                }
+            }
+        }
+    }
+
+    ArchivoHeader headerOrdenes;
+    ResultadoArchivoDetalles lecturaOrdenes = leerHeaderOrdenes(headerOrdenes);
+    if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+        cout << "\n[!] No se pudieron consultar ordenes.bin." << endl;
+    } else if (headerOrdenes.cantidadRegistros == 0) {
+        cout << "\nOrdenes de servicio registradas: 0" << endl;
         cout << "  No hay ordenes." << endl;
     } else {
-        for (int i = 0; i < s->numOrdenes; ++i) mostrarDetalleOrden(s, &s->ordenes[i]);
+        cout << "\nOrdenes de servicio registradas: "
+             << headerOrdenes.cantidadRegistros << endl;
+        LectorRegistrosArchivo<OrdenServicio> lector;
+        ResultadoArchivoDetalles lectura =
+            lector.abrir(ARCHIVO_ORDENES, headerOrdenes);
+        if (lectura != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo consultar ordenes.bin." << endl;
+        } else {
+            for (int i = 0; i < headerOrdenes.cantidadRegistros; ++i) {
+                OrdenServicio orden;
+                lectura = lector.siguiente(orden);
+                if (lectura != ResultadoArchivoDetalles::Correcto) {
+                    cout << "[!] Error al leer un registro de ordenes.bin." << endl;
+                    break;
+                }
+                if (!orden.eliminado) mostrarDetalleOrden(s, &orden);
+            }
+        }
     }
 
     pausarParaContinuar();
 }
 
 void menuVehiculos(SistemaTaller* s) {
+    (void)s;
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
 
-        int vehiculoActivos = 0;
-        for (int i = 0; i < s->numVehiculos; i++) {
-            if (!s->vehiculos[i].eliminado) vehiculoActivos++;
+        ArchivoHeader header;
+        ResultadoArchivoDetalles lectura = leerHeaderVehiculos(header);
+        if (lectura != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo consultar vehiculos.bin." << endl;
+            pausarParaContinuar();
+            return;
         }
+        const int vehiculosHistoricos = header.cantidadRegistros;
+        const int vehiculosActivos = header.registrosActivos;
 
         cout << "\n--- VEHICULOS ---\n1. Registrar\n";
-        if (vehiculoActivos > 0) {
-            cout << "2. Buscar\n3. Actualizar\n4. Eliminar\n5. Listar\n";
+        if (vehiculosHistoricos > 0) cout << "2. Buscar\n";
+        if (vehiculosActivos > 0) {
+            cout << "3. Actualizar\n4. Eliminar\n5. Listar\n";
         }
         cout << "0. Volver\nOpcion: ";
         if (!(cin >> opcion)) {
@@ -2562,7 +3233,8 @@ void menuVehiculos(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (vehiculoActivos == 0 && opcion != 0 && opcion != 1) {
+        if (vehiculosActivos == 0 && opcion != 0 && opcion != 1 &&
+            !(vehiculosHistoricos > 0 && opcion == 2)) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
@@ -2582,15 +3254,19 @@ void menuMecanicos(SistemaTaller* s) {
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
-        int mecanicosActivos = 0;
-        for (int i = 0; i < s->numMecanicos; i++) {
-            if (!s->mecanicos[i].eliminado) mecanicosActivos++;
+        ArchivoHeader header;
+        ResultadoArchivoDetalles lectura = leerHeaderMecanicos(header);
+        if (lectura != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo consultar mecanicos.bin." << endl;
+            pausarParaContinuar();
+            return;
         }
+        const int mecanicosHistoricos = header.cantidadRegistros;
+        const int mecanicosActivos = header.registrosActivos;
 
         cout << "\n--- MECANICOS ---\n1. Registrar\n";
-        if (mecanicosActivos > 0) {
-            cout << "2. Listar\n3. Eliminar\n";
-        }
+        if (mecanicosHistoricos > 0) cout << "2. Listar\n";
+        if (mecanicosActivos > 0) cout << "3. Eliminar\n";
         cout << "0. Volver\nOpcion: ";
         if (!(cin >> opcion)) {
             if (cin.eof()) return;
@@ -2601,7 +3277,8 @@ void menuMecanicos(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (mecanicosActivos == 0 && opcion != 0 && opcion != 1) {
+        if (mecanicosActivos == 0 && opcion != 0 && opcion != 1 &&
+            !(mecanicosHistoricos > 0 && opcion == 2)) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
@@ -2619,10 +3296,14 @@ void menuRepuestos(SistemaTaller* s) {
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
-        int repuestosActivos = 0;
-        for (int i = 0; i < s->numRepuestos; i++) {
-            if (!s->repuestos[i].eliminado) repuestosActivos++;
+        ArchivoHeader header;
+        ResultadoArchivoDetalles lectura = leerHeaderRepuestos(header);
+        if (lectura != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo consultar repuestos.bin." << endl;
+            pausarParaContinuar();
+            return;
         }
+        const int repuestosActivos = header.registrosActivos;
 
         cout << "\n--- REPUESTOS ---\n1. Registrar\n";
         if (repuestosActivos > 0) {
@@ -2657,21 +3338,36 @@ void menuRepuestos(SistemaTaller* s) {
 }
 
 void menuOrdenes(SistemaTaller* s) {
-    int vehiculosActivos = 0; for(int i=0; i<s->numVehiculos; ++i) if(!s->vehiculos[i].eliminado) vehiculosActivos++;
-    int mecanicosActivos = 0; for(int i=0; i<s->numMecanicos; ++i) if(!s->mecanicos[i].eliminado) mecanicosActivos++;
-    int repuestosActivos = 0; for(int i=0; i<s->numRepuestos; ++i) if(!s->repuestos[i].eliminado) repuestosActivos++;
-
-    if (vehiculosActivos == 0 || mecanicosActivos == 0 || repuestosActivos == 0) return;
+    ArchivoHeader headerVehiculos;
+    ResultadoArchivoDetalles lecturaVehiculos = leerHeaderVehiculos(headerVehiculos);
+    if (lecturaVehiculos != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar vehiculos.bin." << endl;
+    }
+    ArchivoHeader headerMecanicos;
+    ResultadoArchivoDetalles lecturaMecanicos = leerHeaderMecanicos(headerMecanicos);
+    if (lecturaMecanicos != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar mecanicos.bin." << endl;
+    }
+    const bool puedeAbrirOrden =
+        lecturaVehiculos == ResultadoArchivoDetalles::Correcto &&
+        headerVehiculos.registrosActivos > 0 &&
+        lecturaMecanicos == ResultadoArchivoDetalles::Correcto &&
+        headerMecanicos.registrosActivos > 0;
 
     int opcion = -1;
     while (opcion != 0) {
         limpiarTerminal();
-        int ordenesActivas = 0;
-        for (int i = 0; i < s->numOrdenes; i++) {
-            if (!s->ordenes[i].eliminado) ordenesActivas++;
+        ArchivoHeader headerOrdenes;
+        ResultadoArchivoDetalles lecturaOrdenes = leerHeaderOrdenes(headerOrdenes);
+        if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo consultar ordenes.bin." << endl;
+            pausarParaContinuar();
+            return;
         }
+        const int ordenesActivas = headerOrdenes.registrosActivos;
 
-        cout << "\n--- ORDENES DE SERVICIO ---\n1. Abrir orden\n";
+        cout << "\n--- ORDENES DE SERVICIO ---\n";
+        if (puedeAbrirOrden) cout << "1. Abrir orden\n";
         if (ordenesActivas > 0) {
             cout << "2. Agregar repuesto\n3. Quitar repuesto\n4. Cerrar orden\n"
                  << "5. Anular orden\n6. Ver detalle\n7. Listar ordenes\n";
@@ -2686,7 +3382,8 @@ void menuOrdenes(SistemaTaller* s) {
             continue;
         }
         entradaConSaltoPendiente = true;
-        if (ordenesActivas == 0 && opcion != 0 && opcion != 1) {
+        if ((opcion == 1 && !puedeAbrirOrden) ||
+            (ordenesActivas == 0 && opcion != 0 && opcion != 1)) {
             cout << "[!] Opcion invalida." << endl;
             continue;
         }
@@ -2708,8 +3405,15 @@ void menuOrdenes(SistemaTaller* s) {
 void crearBackup() {
     time_t ahora = time(nullptr);
     tm* local = localtime(&ahora);
-    char carpeta[64];
-    strftime(carpeta, sizeof(carpeta), "backup_%Y-%m-%d_%H-%M-%S", local);
+    if (local == nullptr) {
+        cout << "[!] No se pudo obtener la fecha para crear el respaldo." << endl;
+        return;
+    }
+    char carpeta[64] = {};
+    if (strftime(carpeta, sizeof(carpeta), "backup_%Y-%m-%d_%H-%M-%S", local) == 0) {
+        cout << "[!] No se pudo generar el nombre del respaldo." << endl;
+        return;
+    }
 
     string cmd = "mkdir ";
 #ifdef _WIN32
@@ -2717,9 +3421,20 @@ void crearBackup() {
 #else 
     cmd = "mkdir -p " + string(carpeta);
 #endif
-    system(cmd.c_str());
+    if (system(cmd.c_str()) != 0) {
+        cout << "[!] No se pudo crear la carpeta de respaldo " << carpeta << "." << endl;
+        return;
+    }
 
-    const char* archivos[] = {
+    const char* rutas[] = {
+        ARCHIVO_TALLER,
+        ARCHIVO_VEHICULOS,
+        ARCHIVO_MECANICOS,
+        ARCHIVO_ORDENES,
+        ARCHIVO_REPUESTOS,
+        ARCHIVO_DETALLES,
+    };
+    const char* nombres[] = {
         "taller.bin",
         "vehiculos.bin",
         "mecanicos.bin",
@@ -2728,20 +3443,114 @@ void crearBackup() {
         "detalles.bin",
     };
 
-    for (const char* nombreArch : archivos) {
-        ifstream origen(nombreArch, ios::binary);
-        if (!origen.is_open()) continue;
+    bool completo = true;
+    for (size_t i = 0; i < sizeof(rutas) / sizeof(rutas[0]); ++i) {
+        ifstream origen(rutas[i], ios::in | ios::binary);
+        if (!origen.is_open()) {
+            cout << "[!] No se pudo abrir " << rutas[i] << " para respaldarlo." << endl;
+            completo = false;
+            continue;
+        }
 
-        string rutaDestino = string(carpeta) + "/" + nombreArch;
+        string rutaDestino = string(carpeta) + "/" + nombres[i];
         ofstream destino(rutaDestino, ios::binary);
-        if (destino.is_open()) {
-            destino << origen.rdbuf();
-            destino.close();
+        if (!destino.is_open()) {
+            cout << "[!] No se pudo crear " << rutaDestino << "." << endl;
+            completo = false;
+            continue;
+        }
+        destino << origen.rdbuf();
+        destino.flush();
+        if (!destino || origen.bad()) {
+            cout << "[!] Fallo al copiar " << rutas[i] << " a " << rutaDestino << "." << endl;
+            completo = false;
+        }
+        destino.close();
+        if (destino.fail()) {
+            cout << "[!] No se pudo finalizar " << rutaDestino << "." << endl;
+            completo = false;
         }
         origen.close();
     }
 
-    cout << "[OK] Respaldo creado correctamente en la carpeta: " << carpeta << endl;
+    if (completo) {
+        cout << "[OK] Respaldo creado correctamente en la carpeta: " << carpeta << endl;
+    } else {
+        cout << "[!] El respaldo quedo incompleto en la carpeta: " << carpeta << endl;
+    }
+}
+
+template <typename Registro>
+bool prepararArchivoIntegridad(
+    const char* ruta,
+    const char* nombre,
+    ifstream& archivo,
+    ArchivoHeader& header,
+    int& cantidadFisica,
+    int& problemas) {
+    archivo.open(ruta, ios::in | ios::binary);
+    if (!archivo.is_open()) {
+        cout << "[ROTO] No se pudo abrir " << nombre << "." << endl;
+        ++problemas;
+        return false;
+    }
+
+    archivo.read(reinterpret_cast<char*>(&header), sizeof(ArchivoHeader));
+    if (!archivo) {
+        cout << "[ROTO] No se pudo leer el header de " << nombre << "." << endl;
+        ++problemas;
+        return false;
+    }
+
+    bool headerValido =
+        header.cantidadRegistros >= 0 &&
+        header.cantidadRegistros < numeric_limits<int>::max() &&
+        header.proximoID == header.cantidadRegistros + 1 &&
+        header.registrosActivos >= 0 &&
+        header.registrosActivos <= header.cantidadRegistros &&
+        header.version == VERSION_ARCHIVO;
+    if (!headerValido) {
+        cout << "[ROTO] Header invalido en " << nombre << "." << endl;
+        ++problemas;
+    }
+
+    archivo.clear();
+    archivo.seekg(0, ios::end);
+    if (!archivo || archivo.tellg() < static_cast<streamoff>(sizeof(ArchivoHeader))) {
+        cout << "[ROTO] " << nombre << " no contiene un header completo." << endl;
+        ++problemas;
+        return false;
+    }
+
+    const streamoff bytesDatos =
+        archivo.tellg() - static_cast<streamoff>(sizeof(ArchivoHeader));
+    const streamoff registrosFisicos = bytesDatos / static_cast<streamoff>(sizeof(Registro));
+    const streamoff bytesRestantes = bytesDatos % static_cast<streamoff>(sizeof(Registro));
+    if (registrosFisicos > numeric_limits<int>::max()) {
+        cout << "[ROTO] " << nombre << " excede la cantidad de registros soportada." << endl;
+        ++problemas;
+        cantidadFisica = numeric_limits<int>::max();
+    } else {
+        cantidadFisica = static_cast<int>(registrosFisicos);
+    }
+
+    if (header.cantidadRegistros != cantidadFisica || bytesRestantes != 0) {
+        cout << "[ROTO] Header de " << nombre << " indica "
+             << header.cantidadRegistros << " registros; el archivo contiene "
+             << cantidadFisica << " registros completos";
+        if (bytesRestantes != 0) cout << " y " << bytesRestantes << " bytes sobrantes";
+        cout << "." << endl;
+        ++problemas;
+    }
+
+    archivo.clear();
+    archivo.seekg(sizeof(ArchivoHeader), ios::beg);
+    if (!archivo) {
+        cout << "[ROTO] No se pudo posicionar la lectura de " << nombre << "." << endl;
+        ++problemas;
+        return false;
+    }
+    return true;
 }
 
 void verificarIntegridad() {
@@ -2754,120 +3563,234 @@ void verificarIntegridad() {
     int ordenesVerificados = 0;
     int problemasEncontrados = 0;
 
+    ArchivoHeader headerVehiculos = {};
+    ArchivoHeader headerMecanicos = {};
+    ArchivoHeader headerRepuestos = {};
+    ArchivoHeader headerOrdenes = {};
+    ArchivoHeader headerDetalles = {};
+    int cantidadVehiculos = 0;
+    int cantidadMecanicos = 0;
+    int cantidadRepuestos = 0;
+    int cantidadOrdenes = 0;
+    int cantidadDetalles = 0;
+    ifstream archivoVehiculos;
+    ifstream archivoMecanicos;
+    ifstream archivoRepuestos;
+    ifstream archivoOrdenes;
+    ifstream archivoDetalles;
+    const bool vehiculosListos = prepararArchivoIntegridad<Vehiculo>(
+        ARCHIVO_VEHICULOS, "vehiculos.bin", archivoVehiculos, headerVehiculos,
+        cantidadVehiculos, problemasEncontrados);
+    const bool mecanicosListos = prepararArchivoIntegridad<Mecanico>(
+        ARCHIVO_MECANICOS, "mecanicos.bin", archivoMecanicos, headerMecanicos,
+        cantidadMecanicos, problemasEncontrados);
+    const bool repuestosListos = prepararArchivoIntegridad<Repuesto>(
+        ARCHIVO_REPUESTOS, "repuestos.bin", archivoRepuestos, headerRepuestos,
+        cantidadRepuestos, problemasEncontrados);
+    const bool ordenesListas = prepararArchivoIntegridad<OrdenServicio>(
+        ARCHIVO_ORDENES, "ordenes.bin", archivoOrdenes, headerOrdenes,
+        cantidadOrdenes, problemasEncontrados);
+    const bool detallesListos = prepararArchivoIntegridad<DetalleArchivo>(
+        ARCHIVO_DETALLES, "detalles.bin", archivoDetalles, headerDetalles,
+        cantidadDetalles, problemasEncontrados);
+
     {
-        ifstream f(ARCHIVO_VEHICULOS, ios::binary);
-        if (f.is_open()) {
-            ArchivoHeader h;
-            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
-
-            f.seekg(0, ios::end);
-            streamoff tam = f.tellg();
-            streamoff esperado = sizeof(ArchivoHeader) + static_cast<streamoff>(h.cantidadRegistros) * sizeof(Vehiculo);
-            if (tam != esperado) {
-                cout << "[ROTO] Header de vehiculos.bin indica " << h.cantidadRegistros << " registros, pero el espacio en disco no coincide." << endl;
-                problemasEncontrados++;
+        ifstream taller(ARCHIVO_TALLER, ios::in | ios::binary);
+        if (!taller.is_open()) {
+            cout << "[ROTO] No se pudo abrir taller.bin." << endl;
+            ++problemasEncontrados;
+        } else {
+            taller.seekg(0, ios::end);
+            if (!taller || taller.tellg() != static_cast<streamoff>(sizeof(Taller))) {
+                cout << "[ROTO] taller.bin no contiene exactamente un registro Taller." << endl;
+                ++problemasEncontrados;
             }
-
-            f.seekg(sizeof(ArchivoHeader), ios::beg);
-            for (int i = 0; i < h.cantidadRegistros; ++i) {
-                Vehiculo v;
-                f.read(reinterpret_cast<char*>(&v), sizeof(Vehiculo));
-                vehiculosVerificados++;
-            }
-            f.close();
         }
     }
 
-    {
-        ifstream f(ARCHIVO_MECANICOS, ios::binary);
-        if (f.is_open()) {
-            ArchivoHeader h;
-            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
-            f.seekg(sizeof(ArchivoHeader), ios::beg);
-            for (int i = 0; i < h.cantidadRegistros; ++i) {
-                Mecanico m;
-                f.read(reinterpret_cast<char*>(&m), sizeof(Mecanico));
-                mecanicosVerificados++;
+    if (vehiculosListos) {
+        int activos = 0;
+        for (int i = 0; i < cantidadVehiculos; ++i) {
+            Vehiculo vehiculo;
+            archivoVehiculos.read(reinterpret_cast<char*>(&vehiculo), sizeof(Vehiculo));
+            if (!archivoVehiculos) {
+                cout << "[ROTO] Error al leer el vehiculo de indice " << i << "." << endl;
+                ++problemasEncontrados;
+                break;
             }
-            f.close();
+            ++vehiculosVerificados;
+            if (vehiculo.id != i + 1) {
+                cout << "[ROTO] ID inconsistente en vehiculos.bin, indice " << i
+                     << ": se esperaba " << i + 1 << " y se leyo " << vehiculo.id << "." << endl;
+                ++problemasEncontrados;
+            }
+            if (!vehiculo.eliminado) ++activos;
+        }
+        if (headerVehiculos.registrosActivos != activos) {
+            cout << "[ROTO] Header de vehiculos.bin indica "
+                 << headerVehiculos.registrosActivos << " activos; se contaron "
+                 << activos << "." << endl;
+            ++problemasEncontrados;
         }
     }
 
-    {
-        ifstream f(ARCHIVO_REPUESTOS, ios::binary);
-        if (f.is_open()) {
-            ArchivoHeader h;
-            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
-            f.seekg(sizeof(ArchivoHeader), ios::beg);
-            for (int i = 0; i < h.cantidadRegistros; ++i) {
-                Repuesto r;
-                f.read(reinterpret_cast<char*>(&r), sizeof(Repuesto));
-                repuestosVerificados++;
-                if (r.stock < 0) {
-                    cout << "[ROTO] Repuesto ID " << r.id << " (" << r.codigo << ") tiene stock negativo: " << r.stock << endl;
-                    problemasEncontrados++;
-                }
+    if (mecanicosListos) {
+        int activos = 0;
+        for (int i = 0; i < cantidadMecanicos; ++i) {
+            Mecanico mecanico;
+            archivoMecanicos.read(reinterpret_cast<char*>(&mecanico), sizeof(Mecanico));
+            if (!archivoMecanicos) {
+                cout << "[ROTO] Error al leer el mecanico de indice " << i << "." << endl;
+                ++problemasEncontrados;
+                break;
             }
-            f.close();
+            ++mecanicosVerificados;
+            if (mecanico.id != i + 1) {
+                cout << "[ROTO] ID inconsistente en mecanicos.bin, indice " << i << "." << endl;
+                ++problemasEncontrados;
+            }
+            if (!mecanico.eliminado) ++activos;
+        }
+        if (headerMecanicos.registrosActivos != activos) {
+            cout << "[ROTO] Header de mecanicos.bin indica "
+                 << headerMecanicos.registrosActivos << " activos; se contaron "
+                 << activos << "." << endl;
+            ++problemasEncontrados;
         }
     }
 
-    {
-        ifstream f(ARCHIVO_ORDENES, ios::binary);
-        if (f.is_open()) {
-            ArchivoHeader h;
-            f.read(reinterpret_cast<char*>(&h), sizeof(ArchivoHeader));
-            f.seekg(sizeof(ArchivoHeader), ios::beg);
-            for (int i = 0; i < h.cantidadRegistros; ++i) {
-                OrdenServicio o;
-                f.read(reinterpret_cast<char*>(&o), sizeof(OrdenServicio));
-                ordenesVerificados++;
-
-                Vehiculo v;
-                bool vExiste = false;
-                {
-                    ifstream fv(ARCHIVO_VEHICULOS, ios::binary);
-                    if (fv.is_open()) {
-                        ArchivoHeader hv; fv.read(reinterpret_cast<char*>(&hv), sizeof(ArchivoHeader));
-                        for (int j = 0; j < hv.cantidadRegistros; ++j) {
-                            fv.read(reinterpret_cast<char*>(&v), sizeof(Vehiculo));
-                            if (v.id == o.idVehiculo) { vExiste = true; break; }
-                        }
-                        fv.close();
-                    }
-                }
-
-                if (!vExiste) {
-                    cout << "[ROTO] Orden#" << o.id << " apunta al vehiculo ID " << o.idVehiculo << " (no existe en vehiculos.bin)" << endl;
-                    problemasEncontrados++;
-                } else if (strcmp(o.estado, "Abierta") == 0 && v.eliminado) {
-                    cout << "[ROTO] Orden ABIERTA #" << o.id << " apunta a un vehiculo inactivo/eliminado (ID " << v.id << ")" << endl;
-                    problemasEncontrados++;
-                }
-
-                Mecanico m;
-                bool mExiste = false;
-                {
-                    ifstream fm(ARCHIVO_MECANICOS, ios::binary);
-                    if (fm.is_open()) {
-                        ArchivoHeader hm; fm.read(reinterpret_cast<char*>(&hm), sizeof(ArchivoHeader));
-                        for (int j = 0; j < hm.cantidadRegistros; ++j) {
-                            fm.read(reinterpret_cast<char*>(&m), sizeof(Mecanico));
-                            if (m.id == o.idMecanico) { mExiste = true; break; }
-                        }
-                        fm.close();
-                    }
-                }
-
-                if (!mExiste) {
-                    cout << "[ROTO] Orden #" << o.id << " apunta al mecanico ID" << o.idMecanico << " (no existe en mecanicos.bin)" << endl;
-                    problemasEncontrados++;
-                } else if (strcmp(o.estado, "Abierta") == 0 && m.eliminado) {
-                   cout << "[ROTO] Orden ABIERTA #" << o.id << " apunta a un mecanico dado de baja (ID " << m.id << ")" << endl;
-                   problemasEncontrados++;   
-                }
+    if (repuestosListos) {
+        int activos = 0;
+        for (int i = 0; i < cantidadRepuestos; ++i) {
+            Repuesto repuesto;
+            archivoRepuestos.read(reinterpret_cast<char*>(&repuesto), sizeof(Repuesto));
+            if (!archivoRepuestos) {
+                cout << "[ROTO] Error al leer el repuesto de indice " << i << "." << endl;
+                ++problemasEncontrados;
+                break;
             }
-            f.close();
+            ++repuestosVerificados;
+            if (repuesto.id != i + 1) {
+                cout << "[ROTO] ID inconsistente en repuestos.bin, indice " << i << "." << endl;
+                ++problemasEncontrados;
+            }
+            if (!repuesto.eliminado) ++activos;
+            if (repuesto.stock < 0) {
+                cout << "[ROTO] Repuesto ID " << repuesto.id << " (" << repuesto.codigo
+                     << ") tiene stock negativo: " << repuesto.stock << "." << endl;
+                ++problemasEncontrados;
+            }
+        }
+        if (headerRepuestos.registrosActivos != activos) {
+            cout << "[ROTO] Header de repuestos.bin indica "
+                 << headerRepuestos.registrosActivos << " activos; se contaron "
+                 << activos << "." << endl;
+            ++problemasEncontrados;
+        }
+    }
+
+    if (ordenesListas) {
+        int activos = 0;
+        for (int i = 0; i < cantidadOrdenes; ++i) {
+            OrdenServicio orden;
+            archivoOrdenes.read(reinterpret_cast<char*>(&orden), sizeof(OrdenServicio));
+            if (!archivoOrdenes) {
+                cout << "[ROTO] Error al leer la orden de indice " << i << "." << endl;
+                ++problemasEncontrados;
+                break;
+            }
+            ++ordenesVerificados;
+            if (orden.id != i + 1) {
+                cout << "[ROTO] ID inconsistente en ordenes.bin, indice " << i << "." << endl;
+                ++problemasEncontrados;
+            }
+            if (!orden.eliminado) ++activos;
+            if (!cadenaTerminada(orden.estado, sizeof(orden.estado))) {
+                cout << "[ROTO] Estado sin terminador en la orden ID " << orden.id << "." << endl;
+                ++problemasEncontrados;
+                continue;
+            }
+
+            Vehiculo vehiculo;
+            ResultadoArchivoDetalles lecturaVehiculo =
+                buscarVehiculoPorID(orden.idVehiculo, vehiculo, true);
+            if (lecturaVehiculo != ResultadoArchivoDetalles::Correcto) {
+                cout << "[ROTO] Orden #" << orden.id << " apunta al vehiculo ID "
+                     << orden.idVehiculo << " (no se pudo leer en vehiculos.bin)." << endl;
+                ++problemasEncontrados;
+            } else if (!orden.eliminado &&
+                       igualSinMayusculas(orden.estado, "Abierta") && vehiculo.eliminado) {
+                cout << "[ROTO] Orden ABIERTA #" << orden.id
+                     << " apunta a un vehiculo dado de baja (ID " << vehiculo.id << ")." << endl;
+                ++problemasEncontrados;
+            }
+
+            Mecanico mecanico;
+            ResultadoArchivoDetalles lecturaMecanico =
+                buscarMecanicoPorID(orden.idMecanico, mecanico, true);
+            if (lecturaMecanico != ResultadoArchivoDetalles::Correcto) {
+                cout << "[ROTO] Orden #" << orden.id << " apunta al mecanico ID "
+                     << orden.idMecanico << " (no se pudo leer en mecanicos.bin)." << endl;
+                ++problemasEncontrados;
+            } else if (!orden.eliminado &&
+                       igualSinMayusculas(orden.estado, "Abierta") && mecanico.eliminado) {
+                cout << "[ROTO] Orden ABIERTA #" << orden.id
+                     << " apunta a un mecanico dado de baja (ID " << mecanico.id << ")." << endl;
+                ++problemasEncontrados;
+            }
+        }
+        if (headerOrdenes.registrosActivos != activos) {
+            cout << "[ROTO] Header de ordenes.bin indica "
+                 << headerOrdenes.registrosActivos << " activos; se contaron "
+                 << activos << "." << endl;
+            ++problemasEncontrados;
+        }
+    }
+
+    if (detallesListos) {
+        int activos = 0;
+        for (int i = 0; i < cantidadDetalles; ++i) {
+            DetalleArchivo detalle;
+            archivoDetalles.read(reinterpret_cast<char*>(&detalle), sizeof(DetalleArchivo));
+            if (!archivoDetalles) {
+                cout << "[ROTO] Error al leer el detalle de indice " << i << "." << endl;
+                ++problemasEncontrados;
+                break;
+            }
+            if (detalle.idDetalle != i + 1) {
+                cout << "[ROTO] ID inconsistente en detalles.bin, indice " << i << "." << endl;
+                ++problemasEncontrados;
+            }
+            if (!detalle.eliminado) ++activos;
+            if (detalle.eliminado) continue;
+
+            Repuesto repuesto;
+            if (buscarRepuestoPorID(detalle.idRepuesto, repuesto, true) !=
+                ResultadoArchivoDetalles::Correcto) {
+                cout << "[ROTO] Detalle ID " << detalle.idDetalle << " (Orden #"
+                     << detalle.idOrden << ") apunta al repuesto ID "
+                     << detalle.idRepuesto << " (no existe en repuestos.bin)." << endl;
+                ++problemasEncontrados;
+            } else if (repuesto.eliminado) {
+                cout << "[ROTO] Detalle ID " << detalle.idDetalle
+                     << " apunta al repuesto dado de baja ID " << detalle.idRepuesto << "." << endl;
+                ++problemasEncontrados;
+            }
+
+            OrdenServicio orden;
+            if (buscarOrdenPorID(detalle.idOrden, orden, true) !=
+                ResultadoArchivoDetalles::Correcto) {
+                cout << "[ROTO] Detalle ID " << detalle.idDetalle
+                     << " apunta a la orden ID " << detalle.idOrden
+                     << " (no existe en ordenes.bin)." << endl;
+                ++problemasEncontrados;
+            }
+        }
+        if (headerDetalles.registrosActivos != activos) {
+            cout << "[ROTO] Header de detalles.bin indica "
+                 << headerDetalles.registrosActivos << " activos; se contaron "
+                 << activos << "." << endl;
+            ++problemasEncontrados;
         }
     }
 
@@ -2877,13 +3800,8 @@ void verificarIntegridad() {
     cout << "Repuestos verificados : " << repuestosVerificados << endl;
     cout << "Ordenes verificadas   : " << ordenesVerificados << endl;
     cout << "Problemas encontrados : " << problemasEncontrados << endl;
-    
-    if (problemasEncontrados == 0) {
-        cout << "Estado: SISTEMA ÍNTEGRO" << endl;
-    } else {
-        cout << "Estado: SE ENCONTRARON INCONSISTENCIAS" << endl;
-    }
-    
+    cout << (problemasEncontrados == 0
+        ? "Estado: SISTEMA INTEGRO" : "Estado: SE ENCONTRARON INCONSISTENCIAS") << endl;
     pausarParaContinuar();
 }
 
@@ -2915,6 +3833,7 @@ void menuMantenimiento(SistemaTaller* s) {
 
 //MODULO DE REPORTES
 void reporteHistorialVehiculo(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     char placa[10] = {};
     cout << "\n==== REPORTE 1: HISTORIAL DE VEHICULO ====" << endl;
@@ -2924,33 +3843,63 @@ void reporteHistorialVehiculo(SistemaTaller* s) {
     if (Validaciones::leerTexto("Ingrese la placa del vehiculo: ", placa, sizeof(placa)) != ResultadoEntrada::Correcto) return;
     Validaciones::convertirAMayusculas(placa);
 
-    Vehiculo* v = buscarVehiculoPorPlaca(s, placa);
-    if (v == nullptr) {
+    Vehiculo vehiculo;
+    ResultadoArchivoDetalles lecturaVehiculo = buscarVehiculoPorPlaca(placa, vehiculo);
+    if (lecturaVehiculo != ResultadoArchivoDetalles::Correcto) {
         cout << "[!] No se encontro un vehiculo activo con esa placa." << endl;
         pausarParaContinuar();
         return;
     }
 
-    mostrarVehiculo(v);
+    mostrarVehiculo(vehiculo);
     cout << "\n--- ORDENES ASOCIADAS AL VEHICULO ---" << endl;
 
     float totalFacturadoCerradas = 0.0f;
     int contarOrdenes = 0;
-
-    for (int i = 0; i < s->numOrdenes; i++) {
-        if (!s->ordenes[i].eliminado && s->ordenes[i].idVehiculo == v->id) {
+    ArchivoHeader headerOrdenes;
+    ResultadoArchivoDetalles lecturaOrdenes = leerHeaderOrdenes(headerOrdenes);
+    if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar ordenes.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+    LectorRegistrosArchivo<OrdenServicio> lectorOrdenes;
+    lecturaOrdenes = lectorOrdenes.abrir(ARCHIVO_ORDENES, headerOrdenes);
+    if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer ordenes.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+    for (int i = 0; i < headerOrdenes.cantidadRegistros; ++i) {
+        OrdenServicio orden;
+        lecturaOrdenes = lectorOrdenes.siguiente(orden);
+        if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de ordenes.bin." << endl;
+            break;
+        }
+        if (!orden.eliminado && orden.idVehiculo == vehiculo.id) {
             contarOrdenes++;
-            Mecanico* m = buscarMecanicoporID(s, s->ordenes[i].idMecanico);
+            Mecanico mecanico;
+            bool mecanicoEncontrado =
+                buscarMecanicoPorID(orden.idMecanico, mecanico, true) ==
+                ResultadoArchivoDetalles::Correcto;
             float totalOrden = 0.0f;
-            calcularTotalOrden(&s->ordenes[i], totalOrden);
+            ResultadoArchivoDetalles resultadoTotal =
+                calcularTotalOrden(&orden, totalOrden);
 
-            cout << "Orden #" << s->ordenes[i].id
-                 << " | Fecha: " << s->ordenes[i].fechaApertura
-                 << " | Estado: " << s->ordenes[i].estado
-                 << " | Mecanico: " << (m != nullptr ? m->nombre : "[Desconocido]")
-                 << " | Total: $" << totalOrden << endl;
+            cout << "Orden #" << orden.id
+                 << " | Fecha: " << orden.fechaApertura
+                 << " | Estado: " << orden.estado
+                 << " | Mecanico: " << (mecanicoEncontrado ? mecanico.nombre : "[Desconocido]")
+                 << " | Total: ";
+            if (resultadoTotal == ResultadoArchivoDetalles::Correcto) {
+                cout << "$" << totalOrden << endl;
+            } else {
+                cout << "[no disponible]" << endl;
+            }
                  
-            if (igualSinMayusculas(s->ordenes[i].estado, "Cerrada")) {
+            if (resultadoTotal == ResultadoArchivoDetalles::Correcto &&
+                igualSinMayusculas(orden.estado, "Cerrada")) {
                 totalFacturadoCerradas += totalOrden;
             }
         }
@@ -2966,6 +3915,7 @@ void reporteHistorialVehiculo(SistemaTaller* s) {
 }
 
 void reporteRepuestosMasUtilizados(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     cout << "\n ==== REPORTE 2: REPUESTOS MAS UTILIZADOS (TOP 10) ====" << endl;
 
@@ -2973,106 +3923,206 @@ void reporteRepuestosMasUtilizados(SistemaTaller* s) {
         int idRepuesto;
         char codigo[20];
         char nombre[100];
-        int unidadesTotales;
+        long long unidadesTotales;
     };
 
-    int maxR = s->numRepuestos;
-    if (maxR == 0) {
+    ArchivoHeader headerRepuestos;
+    ResultadoArchivoDetalles resultado = leerHeaderRepuestos(headerRepuestos);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar repuestos.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+    if (headerRepuestos.cantidadRegistros == 0) {
         cout << "\n[!] No hay repuestos registrados." << endl;
         pausarParaContinuar();
         return;
     }
 
-    ConsumoRepuesto* ranking = new ConsumoRepuesto[maxR];
+    ArchivoHeader headerDetalles;
+    resultado = leerHeaderDetalles(headerDetalles);
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar detalles.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
+    LectorRegistrosArchivo<Repuesto> lectorRepuestos;
+    LectorRegistrosArchivo<DetalleArchivo> lectorDetalles;
+    resultado = lectorRepuestos.abrir(ARCHIVO_REPUESTOS, headerRepuestos);
+    if (resultado == ResultadoArchivoDetalles::Correcto) {
+        resultado = lectorDetalles.abrir(ARCHIVO_DETALLES, headerDetalles);
+    }
+    if (resultado != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudieron consultar los archivos de repuestos o detalles." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
+    ConsumoRepuesto ranking[10] = {};
     int totalRanking = 0;
-
-    for (int i = 0; i < s->numRepuestos; ++i) {
-        ranking[i].idRepuesto = s->repuestos[i].id;
-        strcpy(ranking[i].codigo, s->repuestos[i].codigo);
-        strcpy(ranking[i].nombre, s->repuestos[i].nombre);
-        ranking[i].unidadesTotales = 0;
-        totalRanking++;
-    }
-
-    ArchivoHeader hDetalles;
-    if (leerHeaderDetalles(hDetalles) == ResultadoArchivoDetalles::Correcto && hDetalles.cantidadRegistros > 0) {
-        std::ifstream archivoDetalles(ARCHIVO_DETALLES, ios::in | ios::binary);
-        if (archivoDetalles.is_open()) {
-            archivoDetalles.seekg(sizeof(ArchivoHeader), ios::beg);
-            for (int i = 0; i < hDetalles.cantidadRegistros; ++i) {
-                DetalleArchivo det;
-                archivoDetalles.read(reinterpret_cast<char*>(&det), sizeof(DetalleArchivo));
-                if (!det.eliminado) {
-                   
-                    OrdenServicio* ord = buscarOrdenPorID(s, det.idOrden);
-                    if (ord != nullptr && !ord->eliminado && igualSinMayusculas(ord->estado, "Cerrada")) {
-                        
-                        for (int j = 0; j < totalRanking; ++j) {
-                            if (ranking[j].idRepuesto == det.idRepuesto) {
-                                ranking[j].unidadesTotales += det.cantidad;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            archivoDetalles.close();
+    for (int i = 0; i < headerRepuestos.cantidadRegistros; ++i) {
+        Repuesto repuesto;
+        resultado = lectorRepuestos.siguiente(repuesto);
+        if (resultado != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de repuestos.bin." << endl;
+            pausarParaContinuar();
+            return;
         }
-    }
+        if (!cadenaTerminada(repuesto.codigo, sizeof(repuesto.codigo)) ||
+            !cadenaTerminada(repuesto.nombre, sizeof(repuesto.nombre))) {
+            cout << "[!] Registros inconsistentes en repuestos.bin." << endl;
+            pausarParaContinuar();
+            return;
+        }
 
-    for (int i = 0; i < totalRanking - 1; ++i) {
-        for (int j = 0; j < totalRanking - i - 1; ++j) {
-            if (ranking[j].unidadesTotales < ranking[j + 1].unidadesTotales) {
-                ConsumoRepuesto temp = ranking[j];
-                ranking[j] = ranking[j + 1];
-                ranking[j + 1] = temp;
+        long long unidades = 0;
+        resultado = lectorDetalles.abrir(ARCHIVO_DETALLES, headerDetalles);
+        if (resultado != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo leer detalles.bin." << endl;
+            pausarParaContinuar();
+            return;
+        }
+        for (int j = 0; j < headerDetalles.cantidadRegistros; ++j) {
+            DetalleArchivo detalle;
+            resultado = lectorDetalles.siguiente(detalle);
+            if (resultado != ResultadoArchivoDetalles::Correcto) {
+                cout << "[!] Error al leer un registro de detalles.bin." << endl;
+                pausarParaContinuar();
+                return;
+            }
+            if (detalle.eliminado || detalle.idRepuesto != repuesto.id || detalle.cantidad <= 0) {
+                continue;
+            }
+
+            OrdenServicio orden;
+            ResultadoArchivoDetalles lecturaOrden =
+                buscarOrdenPorID(detalle.idOrden, orden, true);
+            if (lecturaOrden != ResultadoArchivoDetalles::Correcto) {
+                cout << "[!] Detalle con referencia invalida en ordenes.bin." << endl;
+                pausarParaContinuar();
+                return;
+            }
+            if (!orden.eliminado && igualSinMayusculas(orden.estado, "Cerrada")) {
+                unidades += detalle.cantidad;
             }
         }
+
+        if (unidades == 0) continue;
+
+        int posicion = totalRanking;
+        if (totalRanking < 10) {
+            ++totalRanking;
+        } else {
+            if (unidades <= ranking[9].unidadesTotales) continue;
+            posicion = 9;
+        }
+        while (posicion > 0 && ranking[posicion - 1].unidadesTotales < unidades) {
+            ranking[posicion] = ranking[posicion - 1];
+            --posicion;
+        }
+        ranking[posicion].idRepuesto = repuesto.id;
+        strcpy(ranking[posicion].codigo, repuesto.codigo);
+        strcpy(ranking[posicion].nombre, repuesto.nombre);
+        ranking[posicion].unidadesTotales = unidades;
     }
 
-    int mostrarLimite = (totalRanking < 10) ? totalRanking : 10;
     int mostradosReales = 0;
 
     cout << left << setw(8) << "ID" << setw(15) << "Codigo" << setw(35) << "Nombre" << "Unidades Usadas" << endl;
     cout << "------------------------------------------------------------------" << endl;
-    for (int i = 0; i < mostrarLimite; ++i) {
-        if (ranking[i].unidadesTotales > 0) {
-            cout << left << setw(8) << ranking[i].idRepuesto 
-                 << setw(15) << ranking[i].codigo 
-                 << setw(35) << ranking[i].nombre 
-                 << ranking[i].unidadesTotales << endl;
-            mostradosReales++;
-        }
+    for (int i = 0; i < totalRanking; ++i) {
+        cout << left << setw(8) << ranking[i].idRepuesto
+             << setw(15) << ranking[i].codigo
+             << setw(35) << ranking[i].nombre
+             << ranking[i].unidadesTotales << endl;
+        mostradosReales++;
     }
 
     if (mostradosReales == 0) {
         cout << "[!] No hay consumo de repuestos en ordenes cerradas todavia." << endl;
     }
 
-    delete[] ranking;
     pausarParaContinuar();
 }
 
 void reporteFacturacionMecanicos(SistemaTaller* s) {
+    (void)s;
     limpiarTerminal();
     cout << "\n==== REPORTE 3: FACTURACION POR MECANICO ====" << endl;
     cout << left << setw(25) << "Mecanico" << setw(12) << "Ordenes" << setw(15) << "M. obra ($)" << "Repuestos ($)" << endl;
     cout << "-------------------------------------------------------------------" << endl;
 
+    ArchivoHeader header;
+    ResultadoArchivoDetalles lectura = leerHeaderMecanicos(header);
+    if (lectura != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar mecanicos.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
+    LectorRegistrosArchivo<Mecanico> lectorMecanicos;
+    lectura = lectorMecanicos.abrir(ARCHIVO_MECANICOS, header);
+    if (lectura != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer mecanicos.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
+    ArchivoHeader headerOrdenes;
+    ResultadoArchivoDetalles lecturaOrdenes = leerHeaderOrdenes(headerOrdenes);
+    if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo consultar ordenes.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+    LectorRegistrosArchivo<OrdenServicio> lectorOrdenes;
+    lecturaOrdenes = lectorOrdenes.abrir(ARCHIVO_ORDENES, headerOrdenes);
+    if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudo leer ordenes.bin." << endl;
+        pausarParaContinuar();
+        return;
+    }
+
     int mecanicosProcesados = 0;
-    for (int i = 0; i < s->numMecanicos; ++i) {
-        Mecanico m = s->mecanicos[i];
+    for (int i = 0; i < header.cantidadRegistros; ++i) {
+        Mecanico m;
+        lectura = lectorMecanicos.siguiente(m);
+        if (lectura != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] Error al leer un registro de mecanicos.bin." << endl;
+            break;
+        }
         
         int ordenesCerradas = 0;
         float totalManoObra = 0.0f;
         float totalRepuestosMec = 0.0f;
 
-        for (int j = 0; j < s->numOrdenes; ++j) {
-            if (!s->ordenes[j].eliminado && s->ordenes[j].idMecanico == m.id && igualSinMayusculas(s->ordenes[j].estado, "Cerrada")) {
+        lecturaOrdenes = lectorOrdenes.abrir(ARCHIVO_ORDENES, headerOrdenes);
+        if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+            cout << "[!] No se pudo leer ordenes.bin." << endl;
+            pausarParaContinuar();
+            return;
+        }
+        for (int j = 0; j < headerOrdenes.cantidadRegistros; ++j) {
+            OrdenServicio orden;
+            lecturaOrdenes = lectorOrdenes.siguiente(orden);
+            if (lecturaOrdenes != ResultadoArchivoDetalles::Correcto) {
+                cout << "[!] Registros inconsistentes en ordenes.bin." << endl;
+                pausarParaContinuar();
+                return;
+            }
+            if (!orden.eliminado && orden.idMecanico == m.id &&
+                igualSinMayusculas(orden.estado, "Cerrada")) {
                 ordenesCerradas++;
-                totalManoObra += s->ordenes[j].manoObra;
+                totalManoObra += orden.manoObra;
                 float costoRep = 0.0f;
-                calcularCostoRepuestosOrden(s->ordenes[j].id, costoRep);
+                if (calcularCostoRepuestosOrden(orden.id, costoRep) !=
+                    ResultadoArchivoDetalles::Correcto) {
+                    cout << "[!] No se pudo calcular el costo de repuestos de la orden "
+                         << orden.id << "." << endl;
+                    pausarParaContinuar();
+                    return;
+                }
                 totalRepuestosMec += costoRep;
             }
         }
@@ -3105,6 +4155,7 @@ void menuReportes(SistemaTaller* s) {
              << "1. Historial de vehiculo por placa\n"
              << "2. Repuestos mas utilizados (Top 10)\n"
              << "3. Facturacion y carga por mecanico\n"
+             << "4. Lista general de registros\n"
              << "0. Volver al menu principal\n"
              << "Opcion: ";
         
@@ -3122,6 +4173,7 @@ void menuReportes(SistemaTaller* s) {
             case 1: reporteHistorialVehiculo(s); break;
             case 2: reporteRepuestosMasUtilizados(s); break;
             case 3: reporteFacturacionMecanicos(s); break;
+            case 4: menuListaGeneral(s); break;
             case 0: break;
             default: cout << "[!] Opcion invalida." << endl; pausarParaContinuar();
         }
@@ -3131,35 +4183,76 @@ void menuReportes(SistemaTaller* s) {
 //SISTEMA MAIN
 int main() {
     Taller taller = {};
-    cout << "Nombre del taller: ";
-    cin.getline(taller.nombre, sizeof(taller.nombre));
-    cout << "RIF: ";
-    cin.getline(taller.rif, sizeof(taller.rif));
-    cout << "Direccion: ";
-    cin.getline(taller.direccion, sizeof(taller.direccion));
-    cout << "Telefono: ";
-    cin.getline(taller.telefono, sizeof(taller.telefono));
+    ResultadoArchivoDetalles lecturaTaller = leerTaller(taller);
+    if (lecturaTaller == ResultadoArchivoDetalles::Correcto) {
+        cout << "[OK] Datos del taller cargados desde disco (" << taller.nombre << ")." << endl;
+    } else if (lecturaTaller == ResultadoArchivoDetalles::ArchivoNoDisponible) {
+        cout << "\n[!] Primer arranque detectado. Ingrese los datos del taller:\n";
+        cout << "Nombre del taller: ";
+        cin.getline(taller.nombre, sizeof(taller.nombre));
+        cout << "RIF: ";
+        cin.getline(taller.rif, sizeof(taller.rif));
+        cout << "Direccion: ";
+        cin.getline(taller.direccion, sizeof(taller.direccion));
+        cout << "Telefono: ";
+        cin.getline(taller.telefono, sizeof(taller.telefono));
+        taller.fechaCreacion = time(nullptr);
+        taller.fechaUltimaModificacion = taller.fechaCreacion;
+        ResultadoArchivoDetalles guardadoTaller = guardarTaller(taller);
+        if (guardadoTaller == ResultadoArchivoDetalles::Correcto) {
+            cout << "[OK] Archivo taller.bin creado exitosamente." << endl;
+        } else {
+            cout << "[!] No se pudo guardar taller.bin." << endl;
+            return 1;
+        }
+    } else {
+        cout << "[!] taller.bin esta danado o no se pudo leer." << endl;
+        return 1;
+    }
 
     SistemaTaller sistema = {};
     inicializarSistema(sistema, taller);
     
-    cargarDatos(sistema);
+    ResultadoArchivoDetalles cargaDatos = cargarDatos();
+    if (cargaDatos != ResultadoArchivoDetalles::Correcto) {
+        cout << "[!] No se pudieron inicializar los archivos de datos." << endl;
+        return 1;
+    }
 
     int opcion = -1;
     bool salir = false;
     while (!salir) {
         limpiarTerminal();
 
-        int vehiculosActivos = 0; for(int i=0; i<sistema.numVehiculos; ++i) if(!sistema.vehiculos[i].eliminado) vehiculosActivos++;
-        int mecanicosActivos = 0; for(int i=0; i<sistema.numMecanicos; ++i) if(!sistema.mecanicos[i].eliminado) mecanicosActivos++;
-        int repuestosActivos = 0; for(int i=0; i<sistema.numRepuestos; ++i) if(!sistema.repuestos[i].eliminado) repuestosActivos++;
+        ArchivoHeader headerVehiculos;
+        ArchivoHeader headerMecanicos;
+        ArchivoHeader headerRepuestos;
+        ResultadoArchivoDetalles lecturaVehiculos = leerHeaderVehiculos(headerVehiculos);
+        ResultadoArchivoDetalles lecturaMecanicos = leerHeaderMecanicos(headerMecanicos);
+        ResultadoArchivoDetalles lecturaRepuestos = leerHeaderRepuestos(headerRepuestos);
+        const bool archivosRequeridosDisponibles =
+            lecturaVehiculos == ResultadoArchivoDetalles::Correcto &&
+            lecturaMecanicos == ResultadoArchivoDetalles::Correcto &&
+            lecturaRepuestos == ResultadoArchivoDetalles::Correcto;
+        const bool puedeGestionarOrdenes = archivosRequeridosDisponibles &&
+            headerVehiculos.registrosActivos > 0 &&
+            headerMecanicos.registrosActivos > 0 &&
+            headerRepuestos.registrosActivos > 0;
+
+        if (!puedeGestionarOrdenes) {
+            if (!archivosRequeridosDisponibles) {
+                cout << "[!] No se pudo verificar los archivos requeridos para gestionar ordenes."
+                     << endl;
+            } else {
+                cout << "[!] Registre al menos un vehiculo, mecanico y repuesto activo "
+                     << "para habilitar Ordenes de servicio." << endl;
+            }
+        }
 
         cout << "\n=== " << sistema.taller.nombre << " ===\n"
              << "1. Vehiculos\n2. Mecanicos\n3. Repuestos\n";
-        if (vehiculosActivos > 0 && mecanicosActivos > 0 && repuestosActivos > 0) {
-            cout << "4. Ordenes de servicio\n";
-        }
-        cout << "5. Lista general de registros\n6. Mantenimeinto\n7. Reportes\n0. Salir\nOpcion: ";
+        if (puedeGestionarOrdenes) cout << "4. Ordenes de servicio\n";
+        cout << "5. Reportes\n6. Mantenimiento\n0. Salir\nOpcion: ";
         if (!(cin >> opcion)) {
             if (cin.eof()) break;
             cin.clear();
@@ -3174,25 +4267,25 @@ int main() {
             case 2: menuMecanicos(&sistema); break;
             case 3: menuRepuestos(&sistema); break;
             case 4:
-                if (vehiculosActivos > 0 && mecanicosActivos > 0 && repuestosActivos > 0) {
+                if (puedeGestionarOrdenes) {
                     menuOrdenes(&sistema);
+                } else if (archivosRequeridosDisponibles) {
+                    cout << "[!] Registre al menos un vehiculo, mecanico y repuesto activo "
+                         << "para gestionar ordenes." << endl;
+                    pausarParaContinuar();
                 } else {
-                    cout << "[!] Registre al menos un vehiculo, un mecanico y un repuesto antes de gestionar ordenes." << endl;
+                    cout << "[!] No se pudo verificar los archivos requeridos para gestionar ordenes."
+                         << endl;
                     pausarParaContinuar();
                 }
                 break;
-            case 5: menuListaGeneral(&sistema); break;
+            case 5: menuReportes(&sistema); break;
             case 6: menuMantenimiento(&sistema); break;
-            case 7: menuReportes(&sistema); break;
             case 0: 
                 salir = confirmarAccion("Salir del sistema"); 
-                if (salir) {
-                    guardarDatos(sistema);
-                }
                 break;
             default: cout << "[!] Opcion invalida." << endl;
         }
     }
-    liberarSistema(sistema);
     return 0;
 }
